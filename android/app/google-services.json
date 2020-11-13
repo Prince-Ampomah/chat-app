@@ -1,0 +1,122 @@
+{
+  "project_info": {
+    "project_number": "124444964213",
+    "firebase_url": "https://brew-crew-coffee-bf046.firebaseio.com",
+    "project_id": "brew-crew-coffee-bf046",
+    "storage_bucket": "brew-crew-coffee-bf046.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124444964213:android:65ce0cd3f1bd960ac00f3c",
+        "android_client_info": {
+          "package_name": "com.bravocodes.chatapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "124444964213-55ks82bimas2k61t50hrc99pl6cjq1k6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bravocodes.chatapp",
+            "certificate_hash": "43727698df13264d00a820e253c6684785e479a7"
+          }
+        },
+        {
+          "client_id": "124444964213-m5hk8782uvcki5jre3bnl5sc4em775gf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_EgUOvUHqt4kM923maprj_9l5qNFwBYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "124444964213-m5hk8782uvcki5jre3bnl5sc4em775gf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124444964213:android:044a373452e60f60c00f3c",
+        "android_client_info": {
+          "package_name": "com.bravocodes.chatify"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "124444964213-g0sijkesrg5o6gqd475qs47a3g2mbpt2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bravocodes.chatify",
+            "certificate_hash": "43727698df13264d00a820e253c6684785e479a7"
+          }
+        },
+        {
+          "client_id": "124444964213-m5hk8782uvcki5jre3bnl5sc4em775gf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_EgUOvUHqt4kM923maprj_9l5qNFwBYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "124444964213-m5hk8782uvcki5jre3bnl5sc4em775gf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124444964213:android:f9068b6430c6f211c00f3c",
+        "android_client_info": {
+          "package_name": "com.bravocodes.friendme"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "124444964213-lbcksg75ftpp6j9m28o87p2b8souh9lq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bravocodes.friendme",
+            "certificate_hash": "43727698df13264d00a820e253c6684785e479a7"
+          }
+        },
+        {
+          "client_id": "124444964213-m5hk8782uvcki5jre3bnl5sc4em775gf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_EgUOvUHqt4kM923maprj_9l5qNFwBYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "124444964213-m5hk8782uvcki5jre3bnl5sc4em775gf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
