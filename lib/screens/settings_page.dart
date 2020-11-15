@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:chatapp/screens/profile_photo_viewer.dart';
+import 'package:chatapp/screens/settings_photo_view.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
 import 'package:chatapp/theme/theme.dart';
@@ -175,7 +175,9 @@ class _SettingsState extends State<Settings> {
     final themeChanger = Provider.of<ThemeChanger>(context);
 
     return Scaffold(
+      
       appBar: AppBar(
+        backgroundColor: Styles.appBarColor,
         elevation: 0.0,
         title: Text('Settings'),
         actions: [
@@ -202,7 +204,7 @@ class _SettingsState extends State<Settings> {
                       Navigator.push(context,
                           MaterialPageRoute(
                               builder: (context)
-                              =>ProfilePhotoViewer(photo: photoUrl,)
+                              =>SettingsPhotoView(photo: photoUrl,)
                           )
                       );
                     },

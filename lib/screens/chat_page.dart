@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:chatapp/screens/chat_photo_view.dart';
+import 'package:chatapp/screens/chat_profile_pic_view.dart';
 import 'package:chatapp/screens/home_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
@@ -27,6 +28,7 @@ class _ChatingPageState extends State<ChatingPage> {
   SharedPreferences preferences;
   bool isDisplaySticker;
   bool isLoading;
+  bool hideSendButton;
 
   String chatId;
   String currentUserId;
@@ -42,6 +44,7 @@ class _ChatingPageState extends State<ChatingPage> {
     chatId = '';
     isDisplaySticker = false;
     isLoading = false;
+    hideSendButton = true;
     keyboardFocusNode.addListener(focusNodeListener);
     readFromLocal();
     super.initState();
@@ -56,6 +59,7 @@ class _ChatingPageState extends State<ChatingPage> {
       chatId = '${currentUserId}_${widget.receiverId}';
     } else {
       chatId = '${widget.receiverId}_$currentUserId';
+
       print("ChatId: $chatId");
     }
 
@@ -71,6 +75,11 @@ class _ChatingPageState extends State<ChatingPage> {
     if (keyboardFocusNode.hasFocus) {
       setState(() {
         isDisplaySticker = false; //hide stickers
+        hideSendButton = false; //show send Button
+      });
+    } else {
+      setState(() {
+        hideSendButton = true; //show send Button
       });
     }
   }
@@ -228,16 +237,16 @@ class _ChatingPageState extends State<ChatingPage> {
     final bool isSendByMe = getData['sendBy'] == currentUserId; //check sender
 
     return Container(
-        margin: EdgeInsets.symmetric(horizontal: 8.0),
+        padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 10),
         child: getData['type'] == 0
             ?
 
             //Text Container
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: isSendByMe
                     ? MainAxisAlignment.end
                     : MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   //Send Image
                   isSendByMe
@@ -269,12 +278,16 @@ class _ChatingPageState extends State<ChatingPage> {
                           : CrossAxisAlignment.start,
                       children: [
                         Container(
-                          margin: EdgeInsets.symmetric(
-                              horizontal: 5.0, vertical: 4.0),
+                          margin: EdgeInsets.only(
+                            right: isSendByMe ? 10.0 : 70.0,
+                            left: isSendByMe ? 70.0 : 10.0,
+                            bottom: 4.0,
+                          ),
                           padding: EdgeInsets.symmetric(
                               horizontal: 10.0, vertical: 12.0),
                           decoration: BoxDecoration(
-                              color: isSendByMe ? Colors.red : Colors.yellow,
+                              color: isSendByMe
+                                  ? Color.fromRGBO(192, 214, 255, 5.0) : Color.fromRGBO(222, 214, 243, 5.0) ,
                               borderRadius: isSendByMe
                                   ? BorderRadius.only(
                                       topLeft: Radius.circular(15),
@@ -289,23 +302,30 @@ class _ChatingPageState extends State<ChatingPage> {
                             children: [
                               Text(
                                 getData['msgContent'],
+                                style: TextStyle(
+                                  color: Styles.appBarColor
+                                ),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: EdgeInsets.only(
+                          margin: EdgeInsets.only(
                             left: isSendByMe ? 0.0 : 10.0,
                             right: isSendByMe ? 10.0 : 0.0,
+                          ),
+                          padding: EdgeInsets.only(
+                            left: isSendByMe ? 0.0 : 2.0,
+                            right: isSendByMe ? 2.0 : 0.0,
                           ),
                           alignment: isSendByMe
                               ? Alignment.bottomRight
                               : Alignment.bottomLeft,
                           child: Text(
-                              DateFormat.jm().format(
+                              DateFormat.E().add_MMM().add_jm().format(
                                   DateTime.fromMillisecondsSinceEpoch(
                                       int.parse(getData['timestamp']))),
-                              style: TextStyle(fontSize: 10.0)),
+                              style: TextStyle(fontSize: 9.0)),
                         ),
                       ],
                     ),
@@ -332,6 +352,7 @@ class _ChatingPageState extends State<ChatingPage> {
                                   MaterialPageRoute(
                                       builder: (context) => ChatPhotoView(
                                             photo: getData['msgContent'],
+                                            
                                           )));
                             },
                             child: Material(
@@ -342,7 +363,7 @@ class _ChatingPageState extends State<ChatingPage> {
                                 height: 200.0,
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) =>
-                                    circularProgress(),
+                                    chatImagePlaceholder(),
                                 imageUrl: getData['msgContent'],
                                 errorWidget: (context, url, dynamic) {
                                   return Material(
@@ -359,10 +380,10 @@ class _ChatingPageState extends State<ChatingPage> {
                           Container(
                             margin: EdgeInsets.all(5.0),
                             child: Text(
-                              DateFormat.jm().format(
+                              DateFormat.E().add_MMM().add_jm().format(
                                   DateTime.fromMillisecondsSinceEpoch(
                                       int.parse(getData['timestamp']))),
-                              style: TextStyle(fontSize: 10.0),
+                              style: TextStyle(fontSize: 9.0),
                             ),
                           )
                         ],
@@ -472,23 +493,25 @@ class _ChatingPageState extends State<ChatingPage> {
           ),
 
           //Send Button
-          GestureDetector(
-            onTap: () {
-              if (messageController.text.isNotEmpty &&
-                  messageController.text.trim().isNotEmpty) {
-                onMessageSend(messageController.text, 0);
-                messageController.clear(); //clear
-              }
-            },
-            child: Container(
-              height: 47,
-              width: 47,
-              margin: EdgeInsets.only(right: 5.0),
-              decoration: BoxDecoration(
-                  color: Styles.appBarColor, shape: BoxShape.circle),
-              child: Icon(Icons.send, size: 24, color: Colors.white),
-            ),
-          ),
+          hideSendButton
+              ? Container()
+              : GestureDetector(
+                  onTap: () {
+                    if (messageController.text.isNotEmpty &&
+                        messageController.text.trim().isNotEmpty) {
+                      onMessageSend(messageController.text, 0);
+                      messageController.clear(); //clear
+                    }
+                  },
+                  child: Container(
+                    height: 47,
+                    width: 47,
+                    margin: EdgeInsets.only(right: 5.0),
+                    decoration: BoxDecoration(
+                        color: Styles.appBarColor, shape: BoxShape.circle),
+                    child: Icon(Icons.send, size: 24, color: Colors.white),
+                  ),
+                ),
         ],
       ),
     );
@@ -506,6 +529,8 @@ class _ChatingPageState extends State<ChatingPage> {
           .collection(chatId)
           .doc(DateTime.now().millisecondsSinceEpoch.toString())
           .set({
+        'username': widget.receiverName,
+        'photoUrl': widget.receiverAvatar,
         'sendTo': widget.receiverId,
         'sendBy': currentUserId,
         'msgContent': msgContent,
@@ -521,8 +546,9 @@ class _ChatingPageState extends State<ChatingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Styles.appBarColor,
         leading: IconButton(
-          onPressed: () {
+          onPressed: () async{
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => HomePage()),
@@ -536,12 +562,20 @@ class _ChatingPageState extends State<ChatingPage> {
             )),
         centerTitle: true,
         actions: [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.black,
-              backgroundImage:
-                  CachedNetworkImageProvider(widget.receiverAvatar),
+          GestureDetector(
+            onTap: (){
+              showDialog(context: (context),
+              builder: (context)=>ChatProfilePicView(
+                profileImage: widget.receiverAvatar,
+              ));
+            },
+              child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.black,
+                backgroundImage:
+                    CachedNetworkImageProvider(widget.receiverAvatar),
+              ),
             ),
           )
         ],
@@ -566,15 +600,3 @@ class _ChatingPageState extends State<ChatingPage> {
     );
   }
 }
-
-// saveToLocal() async{
-//   preferences  = await SharedPreferences.getInstance();
-
-//   preferences.setString('recieverId', widget.receiverId);
-//   preferences.setString('recieverName', widget.receiverName);
-//   preferences.setString('recieverAvatar', widget.receiverAvatar);
-
-//   setState((){});
-// }
-
-

@@ -1,9 +1,11 @@
+import 'package:chatapp/style/style.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatPhotoView extends StatefulWidget {
   final String photo;
+
   ChatPhotoView({this.photo});
   @override
   _ChatPhotoViewState createState() => _ChatPhotoViewState();
@@ -16,6 +18,7 @@ class _ChatPhotoViewState extends State<ChatPhotoView> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Styles.appBarColor,
         title: Text('Full Image'),
         elevation: 0.0,
       ),

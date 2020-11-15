@@ -6,13 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 ThemeData lightTheme = ThemeData(
   primarySwatch: Colors.blue,
   visualDensity: VisualDensity.adaptivePlatformDensity,
-  brightness: Brightness.light
+  brightness: Brightness.light,
 );
 
 ThemeData darkTheme = ThemeData(
   primarySwatch: Colors.blue,
   visualDensity: VisualDensity.adaptivePlatformDensity,
-  brightness: Brightness.dark
+  brightness: Brightness.dark,
+  
 );
 
 class ThemeChanger extends ChangeNotifier {

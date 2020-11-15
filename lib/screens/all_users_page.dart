@@ -38,10 +38,11 @@ class _AllUsersState extends State<AllUsers> {
     return StreamBuilder(
       stream: streamUsers,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return Center(child: circularProgress());
+        if (!snapshot.hasData) 
+        return noUsersData();
         if (snapshot.hasError) return Text('${snapshot.error}');
         if (snapshot.connectionState == ConnectionState.waiting)
-          return Center(child: circularProgress());
+          return loadingData();
         return new ListView.separated(
             itemCount: snapshot.data.documents.length,
             itemBuilder: (context, index) {
@@ -134,10 +135,12 @@ class _AllUsersState extends State<AllUsers> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Styles.appBarColor,
         elevation: 0.0,
         title: Text('Chat App'),
       ),
       body: Container(child: allUsers()),
     );
   }
+
 }

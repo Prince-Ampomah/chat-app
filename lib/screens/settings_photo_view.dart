@@ -1,22 +1,24 @@
+import 'package:chatapp/style/style.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class ProfilePhotoViewer extends StatefulWidget {
+class SettingsPhotoView extends StatefulWidget {
   final String photo;
-  ProfilePhotoViewer({this.photo});
+  SettingsPhotoView({this.photo});
   @override
-  _ProfilePhotoViewerState createState() => _ProfilePhotoViewerState();
+  _SettingsPhoto createState() => _SettingsPhoto();
 }
 
-class _ProfilePhotoViewerState extends State<ProfilePhotoViewer> {
+class _SettingsPhoto extends State<SettingsPhotoView> {
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Full Image'),
+        backgroundColor: Styles.appBarColor,
+        title: Text('Setting Image'),
         elevation: 0.0,
       ),
       body: Container(

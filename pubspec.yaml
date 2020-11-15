@@ -46,6 +46,7 @@ dev_dependencies:
   fluttertoast: ^7.1.1
   cached_network_image: ^2.3.3
   image_picker: ^0.6.7+14
+  shimmer: ^1.1.2
 
 
 
