@@ -23,10 +23,9 @@ class _SettingsState extends State<Settings> {
   String photoUrl = '';
   String aboutMe = '';
 
- 
-
   bool isHiddenProfile = false;
   bool isLoading = false;
+  bool showNofitification = true;
 
   SharedPreferences preferences;
   TextEditingController userNameTextController;
@@ -363,6 +362,17 @@ class _SettingsState extends State<Settings> {
                 value: themeChanger.darkTheme,
                 onChanged: (value) {
                   themeChanger.toggleTheme();
+                }),
+
+
+            //Show Notification 
+            SwitchListTile(
+                title: Text('Show Notification'),
+                value: showNofitification,
+                onChanged: (value) {
+                  setState(() {
+                    showNofitification = !showNofitification;
+                  });
                 })
           ],
         ),

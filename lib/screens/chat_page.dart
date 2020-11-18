@@ -4,6 +4,7 @@ import 'package:chatapp/screens/chat_profile_pic_view.dart';
 import 'package:chatapp/screens/home_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,22 +14,24 @@ import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
-class ChatingPage extends StatefulWidget {
+class ChattingPage extends StatefulWidget {
   final String receiverId;
   final String receiverAvatar;
   final String receiverName;
 
-  ChatingPage({this.receiverId, this.receiverAvatar, this.receiverName});
+  ChattingPage({this.receiverId, this.receiverAvatar, this.receiverName});
 
   @override
-  _ChatingPageState createState() => _ChatingPageState();
+  _ChattingPageState createState() => _ChattingPageState();
 }
 
-class _ChatingPageState extends State<ChatingPage> {
+class _ChattingPageState extends State<ChattingPage> {
   SharedPreferences preferences;
   bool isDisplaySticker;
   bool isLoading;
+  bool isOnline = true;
   bool hideSendButton;
+  bool hideScrollDownwardButton;
 
   String chatId;
   String currentUserId;
@@ -38,17 +41,35 @@ class _ChatingPageState extends State<ChatingPage> {
 
   TextEditingController messageController = TextEditingController();
   FocusNode keyboardFocusNode = FocusNode();
+  ScrollController scrollController;
+
+  // String timeStamp =  DateTime.now().millisecondsSinceEpoch.toString();
 
   @override
   void initState() {
     chatId = '';
     isDisplaySticker = false;
     isLoading = false;
+    hideScrollDownwardButton = true;
     hideSendButton = true;
     keyboardFocusNode.addListener(focusNodeListener);
+    scrollController = ScrollController();
+    // scrollController.addListener(scrollListener);
     readFromLocal();
     super.initState();
   }
+
+  // scrollListener(){
+
+  //   if(scrollController.offset >= scrollController.position.maxScrollExtent
+  //    && !scrollController.position.outOfRange){
+  //       setState(() {
+  //         hideScrollDownwardButton = false;
+  //         Fluttertoast.showToast(msg: 'Reach Bottom');
+         
+  //       });
+  //   }
+  // }
 
   readFromLocal() async {
     preferences = await SharedPreferences.getInstance();
@@ -77,11 +98,12 @@ class _ChatingPageState extends State<ChatingPage> {
         isDisplaySticker = false; //hide stickers
         hideSendButton = false; //show send Button
       });
-    } else {
-      setState(() {
-        hideSendButton = true; //show send Button
-      });
     }
+//    else {
+//      setState(() {
+//        hideSendButton = true; //show send Button
+//      });
+//    }
   }
 
   getStickers() {
@@ -101,7 +123,7 @@ class _ChatingPageState extends State<ChatingPage> {
         isLoading = false;
       });
     } else {
-      Fluttertoast.showToast(msg: 'No Image Selected');
+      Fluttertoast.showToast(msg: 'No Image Selected', gravity: ToastGravity.CENTER);
     }
 
     uploadImage();
@@ -243,7 +265,7 @@ class _ChatingPageState extends State<ChatingPage> {
 
             //Text Container
             Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: isSendByMe
                     ? MainAxisAlignment.end
                     : MainAxisAlignment.start,
@@ -287,7 +309,8 @@ class _ChatingPageState extends State<ChatingPage> {
                               horizontal: 10.0, vertical: 12.0),
                           decoration: BoxDecoration(
                               color: isSendByMe
-                                  ? Color.fromRGBO(192, 214, 255, 5.0) : Color.fromRGBO(222, 214, 243, 5.0) ,
+                                  ? Color.fromRGBO(192, 214, 255, 5.0)
+                                  : Color.fromRGBO(222, 214, 243, 5.0),
                               borderRadius: isSendByMe
                                   ? BorderRadius.only(
                                       topLeft: Radius.circular(15),
@@ -302,9 +325,7 @@ class _ChatingPageState extends State<ChatingPage> {
                             children: [
                               Text(
                                 getData['msgContent'],
-                                style: TextStyle(
-                                  color: Styles.appBarColor
-                                ),
+                                style: TextStyle(color: Styles.appBarColor),
                               ),
                             ],
                           ),
@@ -352,7 +373,6 @@ class _ChatingPageState extends State<ChatingPage> {
                                   MaterialPageRoute(
                                       builder: (context) => ChatPhotoView(
                                             photo: getData['msgContent'],
-                                            
                                           )));
                             },
                             child: Material(
@@ -425,20 +445,30 @@ class _ChatingPageState extends State<ChatingPage> {
           if (snapshot.connectionState == ConnectionState.waiting)
             return Center(child: circularProgress());
 
-          return ListView.builder(
-              reverse: true,
-              itemCount: snapshot.data.documents.length,
-              itemBuilder: (context, index) {
-                final DocumentSnapshot documentSnapshot =
-                    snapshot.data.documents[index];
-                return InkWell(
-                  onTap: () {
-                    Fluttertoast.showToast(msg: 'Pressed');
-                  },
-                  onLongPress: () {},
-                  child: createMessageListItem(index, documentSnapshot),
-                );
-              });
+          return Scrollbar(
+            controller: scrollController,
+            thickness: 3.0,
+            radius: Radius.circular(10.0),
+            child: ListView.builder(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                controller: scrollController,
+                reverse: true,
+                itemCount: snapshot.data.documents.length,
+                itemBuilder: (context, index) {
+                  final DocumentSnapshot documentSnapshot =
+                      snapshot.data.documents[index];
+                  return InkWell(
+                    onTap: () {
+                      Fluttertoast.showToast(msg: 'Pressed');
+                    },
+                    onLongPress: () {
+                      Fluttertoast.showToast(msg: 'Long Pressed');
+                    },
+                    child: createMessageListItem(index, documentSnapshot),
+                  );
+                }),
+          );
         });
   }
 
@@ -494,8 +524,8 @@ class _ChatingPageState extends State<ChatingPage> {
 
           //Send Button
           hideSendButton
-              ? Container()
-              : GestureDetector(
+              ? Container():
+               GestureDetector(
                   onTap: () {
                     if (messageController.text.isNotEmpty &&
                         messageController.text.trim().isNotEmpty) {
@@ -542,13 +572,51 @@ class _ChatingPageState extends State<ChatingPage> {
     print('$msgContent, type');
   }
 
+  // AppBar defaultAppBar() {
+  //   return AppBar(
+  //    backgroundColor: Styles.appBarColor,
+  //     leading: IconButton(
+  //       onPressed: () async{
+  //         Navigator.pushAndRemoveUntil(
+  //             context,
+  //             MaterialPageRoute(builder: (context) => HomePage()),
+  //             (route) => false);
+  //       },
+  //       icon: Icon(Icons.chevron_left),
+  //     ),
+  //     title: Text(widget.receiverName,
+  //         style: TextStyle(
+  //           fontSize: 17.0,
+  //         )),
+  //     centerTitle: true,
+  //     actions: [
+  //       GestureDetector(
+  //         onTap: (){
+  //           showDialog(context: (context),
+  //           builder: (context)=>ChatProfilePicView(
+  //             profileImage: widget.receiverAvatar,
+  //           ));
+  //         },
+  //           child: Padding(
+  //           padding: EdgeInsets.all(8.0),
+  //           child: CircleAvatar(
+  //             backgroundColor: Colors.black,
+  //             backgroundImage:
+  //                 CachedNetworkImageProvider(widget.receiverAvatar),
+  //           ),
+  //         ),
+  //       )
+  //     ],
+  // );
+  // }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Styles.appBarColor,
         leading: IconButton(
-          onPressed: () async{
+          onPressed: () async {
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => HomePage()),
@@ -563,18 +631,36 @@ class _ChatingPageState extends State<ChatingPage> {
         centerTitle: true,
         actions: [
           GestureDetector(
-            onTap: (){
-              showDialog(context: (context),
-              builder: (context)=>ChatProfilePicView(
-                profileImage: widget.receiverAvatar,
-              ));
+            onTap: () {
+              showDialog(
+                  context: (context),
+                  builder: (context) => ChatProfilePicView(
+                        profileImage: widget.receiverAvatar,
+                      ));
             },
-              child: Padding(
+            child: Padding(
               padding: EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.black,
-                backgroundImage:
-                    CachedNetworkImageProvider(widget.receiverAvatar),
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                  backgroundColor: Colors.black,
+                  backgroundImage:
+                      CachedNetworkImageProvider(widget.receiverAvatar),
+                ),
+
+         isOnline? Positioned(
+                      top: 25.0,
+                      right: 31.0,
+                      child: Container(
+                          height: 9,
+                          width: 9,
+                          decoration: BoxDecoration(
+                              color: Colors.green[400],
+                              shape: BoxShape.circle
+                          )
+                      )
+                  ) : Container(),
+                ]
               ),
             ),
           )
@@ -595,6 +681,28 @@ class _ChatingPageState extends State<ChatingPage> {
               createInputField()
             ],
           ),
+          
+       hideScrollDownwardButton? Container():
+        Positioned(
+              top: 570.0,
+              left: 320.0,
+              child: GestureDetector(
+                onTap: () {
+                  scrollController.animateTo(0.0,
+                      curve: Curves.easeOut,
+                      duration: const Duration(milliseconds: 300));
+                },
+                child: Container(
+                    height: 28,
+                    width: 28,
+                    decoration: BoxDecoration(
+                        color: Styles.appBarColor, shape: BoxShape.circle),
+                    child: Icon(
+                      Icons.arrow_downward,
+                      size: 20,
+                      color: Colors.white,
+                    )),
+              ))
         ],
       ),
     );

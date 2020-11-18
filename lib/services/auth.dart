@@ -1,4 +1,5 @@
 import 'package:chatapp/model/firebase_user_model.dart';
+import 'package:chatapp/notification/phone_token.dart';
 import 'package:chatapp/services/db.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -54,17 +55,21 @@ class AuthServices {
           DatabaseServices databaseServices = DatabaseServices(uid: user.uid);
           databaseServices.uploadUserInfo(userDetails: userDetails);
 
+          PhoneToken(uid: user.uid).getPhoneToken();
+
           //Store User Info on local storage
           currentUser = user;
           preferences = await SharedPreferences.getInstance();
           await preferences.setString('id', currentUser.uid);
           await preferences.setString('username', currentUser.displayName);
           await preferences.setString('photoUrl', currentUser.photoURL);
-        } else {
+        } 
+        else {
           await preferences.setString('id', docSnapshot[0]['id']);
           await preferences.setString('username', docSnapshot[0]['username']);
           await preferences.setString('photoUrl', docSnapshot[0]['photoUrl']);
           await preferences.setString('aboutMe', docSnapshot[0]['aboutMe']);
+          PhoneToken(uid: user.uid).getPhoneToken();
         }
       }
 

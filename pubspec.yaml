@@ -39,8 +39,10 @@ dev_dependencies:
   firebase_core: ^0.5.2
   firebase_auth: ^0.18.3
   firebase_storage: ^5.0.1
+  firebase_messaging: ^7.0.3
   google_sign_in: ^4.5.6
   cloud_firestore: ^0.14.3
+  cloud_functions: ^0.7.0+1
   photo_view: ^0.10.2
   intl: ^0.16.1
   fluttertoast: ^7.1.1

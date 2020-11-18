@@ -102,7 +102,22 @@ Widget loadingData() {
   );
 }
 
-Widget noDataPlaceholder() {
+
+Widget noUsersData({String users, String info}) {
+  return Center(
+      child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      noData(),
+      SizedBox(height: 10.0),
+      Text(users),
+      SizedBox(height: 5.0),
+      Text(info)
+    ],
+  ));
+}
+
+Widget noData() {
   return Container(
     margin: EdgeInsets.all(15.0),
     child: ListView.builder(
@@ -158,19 +173,6 @@ Widget noDataPlaceholder() {
   );
 }
 
-Widget noUsersData() {
-  return Center(
-      child: Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      noDataPlaceholder(),
-      SizedBox(height: 10.0),
-      Text('No Users'),
-      SizedBox(height: 5.0),
-      Text('All users will be listed here, once they log in')
-    ],
-  ));
-}
 
 Widget chatImagePlaceholder() {
   return Shimmer.fromColors(
@@ -187,3 +189,4 @@ Widget chatImagePlaceholder() {
     ),
   );
 }
+

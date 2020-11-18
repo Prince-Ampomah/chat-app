@@ -1,3 +1,4 @@
+import 'package:chatapp/animation/routing_page_animation.dart';
 import 'package:chatapp/model/chatted_users_model.dart';
 import 'package:chatapp/screens/all_users_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
@@ -17,6 +18,8 @@ class _HomePageState extends State<HomePage> {
   SharedPreferences preferences;
   String id;
   String chatId;
+
+  String info = 'All chat users will be listed here,\nonce you start chatting';
 
   Future<QuerySnapshot> futureBuilderResult;
 
@@ -140,9 +143,15 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Styles.appBarColor,
           onPressed: () {
             Navigator.push(
-                context, MaterialPageRoute(builder: (context) => AllUsers()));
+                context,
+               AnimatePageRoute(widget: AllUsers(),
+                   alignment: Alignment.bottomRight,
+               duration: Duration(milliseconds: 500)));
           },
-          child: Icon(Icons.message, color: Colors.white,),
+          child: Icon(
+            Icons.message,
+            color: Colors.white,
+          ),
         ),
         appBar: AppBar(
           backgroundColor: Styles.appBarColor,
@@ -150,7 +159,7 @@ class _HomePageState extends State<HomePage> {
           actions: [popMenu(context)],
           elevation: 0.0,
         ),
-        body: chattedList());
+        body: noUsersData(users: 'No Users', info: info));
   }
 }
 

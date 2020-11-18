@@ -1,3 +1,4 @@
+import 'package:chatapp/animation/routing_page_animation.dart';
 import 'package:chatapp/model/user_model.dart';
 import 'package:chatapp/screens/chat_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
@@ -16,9 +17,11 @@ class AllUsers extends StatefulWidget {
 class _AllUsersState extends State<AllUsers> {
   SharedPreferences preferences;
   String currentUserId;
+  ScrollController scrollController;
 
   @override
   void initState() {
+    scrollController = ScrollController();
     readFromLocal();
     super.initState();
   }
@@ -38,27 +41,32 @@ class _AllUsersState extends State<AllUsers> {
     return StreamBuilder(
       stream: streamUsers,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) 
-        return noUsersData();
+        if (!snapshot.hasData)
+          return noUsersData(
+              users: 'No Users',
+              info: 'All users will be listed here, once they log in');
         if (snapshot.hasError) return Text('${snapshot.error}');
         if (snapshot.connectionState == ConnectionState.waiting)
           return loadingData();
-        return new ListView.separated(
-            itemCount: snapshot.data.documents.length,
-            itemBuilder: (context, index) {
-              final DocumentSnapshot documentSnapshot =
-                  snapshot.data.documents[index];
-              return createUsersList(index, documentSnapshot);
-            },
-            separatorBuilder: (context, index) {
-              return Divider();
-            });
+        return Scrollbar(
+          thickness: 3.0,
+          radius: Radius.circular(10.0),
+          child: ListView.separated(
+              itemCount: snapshot.data.documents.length,
+              itemBuilder: (context, index) {
+                final DocumentSnapshot documentSnapshot =
+                    snapshot.data.documents[index];
+                return createUsersList(index, documentSnapshot);
+              },
+              separatorBuilder: (context, index) {
+                return Divider();
+              }),
+        );
       },
     );
   }
 
   Widget createUsersList(int index, DocumentSnapshot documentSnapshot) {
-
     //User from User Model
     User eachUser = User(
         id: documentSnapshot.id,
@@ -69,16 +77,27 @@ class _AllUsersState extends State<AllUsers> {
     return FlatButton(
       onPressed: () {
         if (currentUserId != documentSnapshot.data()['id']) {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) {
-            return ChatingPage(
+          Navigator.pushReplacement(
+              context,
+           /*   MaterialPageRoute(
+            builder: (context)=>ChattingPage(
               receiverId: eachUser.id,
               receiverAvatar: eachUser.photoUrl,
               receiverName: eachUser.username,
-            );
-          }));
+            ),
+          )*/
+              AnimatePageRoute(
+                  widget: ChattingPage(
+                    receiverId: eachUser.id,
+                    receiverAvatar: eachUser.photoUrl,
+                    receiverName: eachUser.username,
+                  ),
+                  alignment: Alignment.center,
+                  duration: Duration(milliseconds: 400))
+                );
         } else {
-          Fluttertoast.showToast(msg: 'Not Allowed');
+          Fluttertoast.showToast(
+              msg: 'You\'re logged in as ${documentSnapshot['username']}');
         }
       },
       child: Padding(
@@ -128,7 +147,6 @@ class _AllUsersState extends State<AllUsers> {
         ),
       ),
     );
-  
   }
 
   @override
@@ -142,5 +160,4 @@ class _AllUsersState extends State<AllUsers> {
       body: Container(child: allUsers()),
     );
   }
-
 }
