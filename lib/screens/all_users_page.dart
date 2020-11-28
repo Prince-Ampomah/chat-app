@@ -48,6 +48,7 @@ class _AllUsersState extends State<AllUsers> {
         if (snapshot.hasError) return Text('${snapshot.error}');
         if (snapshot.connectionState == ConnectionState.waiting)
           return loadingData();
+
         return Scrollbar(
           thickness: 3.0,
           radius: Radius.circular(10.0),
@@ -56,7 +57,7 @@ class _AllUsersState extends State<AllUsers> {
               itemBuilder: (context, index) {
                 final DocumentSnapshot documentSnapshot =
                     snapshot.data.documents[index];
-                return createUsersList(index, documentSnapshot);
+                return createUsersList(documentSnapshot);
               },
               separatorBuilder: (context, index) {
                 return Divider();
@@ -66,7 +67,7 @@ class _AllUsersState extends State<AllUsers> {
     );
   }
 
-  Widget createUsersList(int index, DocumentSnapshot documentSnapshot) {
+  Widget createUsersList(DocumentSnapshot documentSnapshot) {
     //User from User Model
     User eachUser = User(
         id: documentSnapshot.id,
@@ -75,26 +76,19 @@ class _AllUsersState extends State<AllUsers> {
         createdAt: documentSnapshot['createdAt']);
 
     return FlatButton(
-      onPressed: () {
+      onPressed: () async{
         if (currentUserId != documentSnapshot.data()['id']) {
           Navigator.pushReplacement(
               context,
-           /*   MaterialPageRoute(
+              MaterialPageRoute(
             builder: (context)=>ChattingPage(
               receiverId: eachUser.id,
               receiverAvatar: eachUser.photoUrl,
               receiverName: eachUser.username,
             ),
-          )*/
-              AnimatePageRoute(
-                  widget: ChattingPage(
-                    receiverId: eachUser.id,
-                    receiverAvatar: eachUser.photoUrl,
-                    receiverName: eachUser.username,
-                  ),
-                  alignment: Alignment.center,
-                  duration: Duration(milliseconds: 400))
-                );
+          )
+          );
+
         } else {
           Fluttertoast.showToast(
               msg: 'You\'re logged in as ${documentSnapshot['username']}');

@@ -25,7 +25,7 @@ class _SettingsState extends State<Settings> {
 
   bool isHiddenProfile = false;
   bool isLoading = false;
-  bool showNofitification = true;
+  bool showNotification = true;
 
   SharedPreferences preferences;
   TextEditingController userNameTextController;
@@ -368,10 +368,10 @@ class _SettingsState extends State<Settings> {
             //Show Notification 
             SwitchListTile(
                 title: Text('Show Notification'),
-                value: showNofitification,
+                value: showNotification,
                 onChanged: (value) {
                   setState(() {
-                    showNofitification = !showNofitification;
+                    showNotification = !showNotification;
                   });
                 })
           ],

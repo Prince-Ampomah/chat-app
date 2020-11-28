@@ -1,18 +1,25 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:chatapp/internet_connectivity/internet_connectivity.dart';
 import 'package:chatapp/screens/chat_photo_view.dart';
 import 'package:chatapp/screens/chat_profile_pic_view.dart';
 import 'package:chatapp/screens/home_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:provider/provider.dart';
+
 
 class ChattingPage extends StatefulWidget {
   final String receiverId;
@@ -27,49 +34,40 @@ class ChattingPage extends StatefulWidget {
 
 class _ChattingPageState extends State<ChattingPage> {
   SharedPreferences preferences;
-  bool isDisplaySticker;
+
+  //Boolean Declarations
   bool isLoading;
-  bool isOnline = true;
   bool hideSendButton;
+  bool showAudioButton;
   bool hideScrollDownwardButton;
 
+  //String Declarations
   String chatId;
   String currentUserId;
 
+
+  //Image File Declarations
   File imageFile;
   String imageUrl;
 
   TextEditingController messageController = TextEditingController();
   FocusNode keyboardFocusNode = FocusNode();
   ScrollController scrollController;
-
-  // String timeStamp =  DateTime.now().millisecondsSinceEpoch.toString();
+  ScrollController textFieldController;
 
   @override
   void initState() {
     chatId = '';
-    isDisplaySticker = false;
     isLoading = false;
     hideScrollDownwardButton = true;
     hideSendButton = true;
+    showAudioButton = true;
     keyboardFocusNode.addListener(focusNodeListener);
     scrollController = ScrollController();
-    // scrollController.addListener(scrollListener);
+    textFieldController = ScrollController();
     readFromLocal();
     super.initState();
   }
-
-  // scrollListener(){
-
-  //   if(scrollController.offset >= scrollController.position.maxScrollExtent
-  //    && !scrollController.position.outOfRange){
-  //       setState(() {
-  //         hideScrollDownwardButton = false;
-  //         Fluttertoast.showToast(msg: 'Reach Bottom');
-         
-  //       });
-  //   }
-  // }
 
   readFromLocal() async {
     preferences = await SharedPreferences.getInstance();
@@ -78,10 +76,11 @@ class _ChattingPageState extends State<ChattingPage> {
 
     if (currentUserId.hashCode <= widget.receiverId.hashCode) {
       chatId = '${currentUserId}_${widget.receiverId}';
+      preferences.setString('chatId', chatId).then((value) => print(value));
     } else {
       chatId = '${widget.receiverId}_$currentUserId';
-
-      print("ChatId: $chatId");
+      preferences.setString('chatId', chatId).then((value) => print(value));
+      print("chatId: $chatId");
     }
 
     FirebaseFirestore.instance
@@ -95,25 +94,12 @@ class _ChattingPageState extends State<ChattingPage> {
   focusNodeListener() {
     if (keyboardFocusNode.hasFocus) {
       setState(() {
-        isDisplaySticker = false; //hide stickers
         hideSendButton = false; //show send Button
       });
     }
-//    else {
-//      setState(() {
-//        hideSendButton = true; //show send Button
-//      });
-//    }
   }
 
-  getStickers() {
-    keyboardFocusNode.unfocus(); //hide keyboard
-    setState(() {
-      isDisplaySticker = !isDisplaySticker;
-    });
-  }
-
-  getImage() async {
+  getImageFromGallery() async {
     PickedFile pickedImage =
         await ImagePicker().getImage(source: ImageSource.gallery);
 
@@ -123,7 +109,8 @@ class _ChattingPageState extends State<ChattingPage> {
         isLoading = false;
       });
     } else {
-      Fluttertoast.showToast(msg: 'No Image Selected', gravity: ToastGravity.CENTER);
+      Fluttertoast.showToast(
+          msg: 'No Image Selected', gravity: ToastGravity.CENTER);
     }
 
     uploadImage();
@@ -172,91 +159,49 @@ class _ChattingPageState extends State<ChattingPage> {
     });
   }
 
-  createStickers() {
-    return Container(
-      height: 180.0,
-      decoration: BoxDecoration(
-          border:
-              Border.all(width: 1.0, color: Colors.white10.withOpacity(0.5))),
-      child: Column(
-        children: [
-          //1st Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              GestureDetector(
-                onTap: () => onMessageSend('mimi1', 2),
-                child: Image.asset('assets/gifs/mimi1.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-              GestureDetector(
-                onTap: () => onMessageSend('mimi2', 2),
-                child: Image.asset('assets/gifs/mimi2.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-              GestureDetector(
-                onTap: () => onMessageSend('mimi3', 2),
-                child: Image.asset('assets/gifs/mimi3.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-            ],
-          ),
+  Widget streamMessages() {
+    return StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection('messages')
+            .doc(chatId)
+            .collection(chatId)
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return Container();
 
-          //2nd Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              GestureDetector(
-                onTap: () => onMessageSend('mimi4', 2),
-                child: Image.asset('assets/gifs/mimi4.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-              GestureDetector(
-                onTap: () => onMessageSend('mimi5', 2),
-                child: Image.asset('assets/gifs/mimi5.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-              GestureDetector(
-                onTap: () => onMessageSend('mimi6', 2),
-                child: Image.asset('assets/gifs/mimi6.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-            ],
-          ),
+          if (snapshot.hasError) return Center(child: Text('$snapshot.error'));
 
-          //3rd Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              GestureDetector(
-                onTap: () => onMessageSend('mimi7', 2),
-                child: Image.asset('assets/gifs/mimi7.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-              GestureDetector(
-                onTap: () => onMessageSend('mimi8', 2),
-                child: Image.asset('assets/gifs/mimi8.gif',
-                    height: 50, width: 50, fit: BoxFit.cover),
-              ),
-              GestureDetector(
-                onTap: () => onMessageSend('mimi9', 2),
-                child: Image.asset(
-                  'assets/gifs/mimi9.gif',
-                  height: 50,
-                  width: 50,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
-          )
-        ],
-      ),
-    );
+          if (snapshot.connectionState == ConnectionState.waiting)
+            return Center(child: circularProgress());
+
+          return Scrollbar(
+            controller: scrollController,
+            thickness: 3.0,
+            radius: Radius.circular(10.0),
+            child: ListView.builder(
+                keyboardDismissBehavior:
+                ScrollViewKeyboardDismissBehavior.onDrag,
+                controller: scrollController,
+                reverse: true,
+                itemCount: snapshot.data.documents.length,
+                itemBuilder: (context, index) {
+                  final DocumentSnapshot documentSnapshot =
+                  snapshot.data.documents[index];
+                  return InkWell(
+                    onLongPress: deleteUser,
+                    child: createMessageListItem(documentSnapshot),
+                  );
+                }),
+          );
+        });
   }
 
-  createMessageListItem(int index, DocumentSnapshot documentSnapshot) {
+  createMessageListItem(DocumentSnapshot documentSnapshot) {
+
     var getData = documentSnapshot.data();
-    final bool isSendByMe = getData['sendBy'] == currentUserId; //check sender
+    final bool isSendByMe = getData['sendBy'] == currentUserId;
+    bool lengthOfText = getData['msgContent'].toString().length > 500;
 
     return Container(
         padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 10),
@@ -299,37 +244,55 @@ class _ChattingPageState extends State<ChattingPage> {
                           ? CrossAxisAlignment.end
                           : CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          margin: EdgeInsets.only(
-                            right: isSendByMe ? 10.0 : 70.0,
-                            left: isSendByMe ? 70.0 : 10.0,
-                            bottom: 4.0,
-                          ),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 10.0, vertical: 12.0),
-                          decoration: BoxDecoration(
-                              color: isSendByMe
-                                  ? Color.fromRGBO(192, 214, 255, 5.0)
-                                  : Color.fromRGBO(222, 214, 243, 5.0),
-                              borderRadius: isSendByMe
-                                  ? BorderRadius.only(
-                                      topLeft: Radius.circular(15),
-                                      topRight: Radius.circular(15),
-                                      bottomLeft: Radius.circular(15))
-                                  : BorderRadius.only(
-                                      topLeft: Radius.circular(15),
-                                      topRight: Radius.circular(15),
-                                      bottomRight: Radius.circular(15),
-                                    )),
-                          child: Column(
-                            children: [
-                              Text(
-                                getData['msgContent'],
-                                style: TextStyle(color: Styles.appBarColor),
-                              ),
-                            ],
+                        //Text Container
+                        InkWell(
+                          onTap:(){Fluttertoast.showToast(msg: 'Text Container Pressed');},
+                          child: Container(
+                            margin: EdgeInsets.only(
+                              right: isSendByMe ? 10.0 : 70.0,
+                              left: isSendByMe ? 70.0 : 10.0,
+                              bottom: 4.0,
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 10.0, vertical: 12.0),
+                            decoration: BoxDecoration(
+                                color: isSendByMe
+                                    ? Color.fromRGBO(192, 214, 255, 5.0)
+                                    : Color.fromRGBO(222, 214, 243, 5.0),
+                                borderRadius: isSendByMe
+                                    ? BorderRadius.only(
+                                        topLeft: Radius.circular(15),
+                                        topRight: Radius.circular(15),
+                                        bottomLeft: Radius.circular(15))
+                                    : BorderRadius.only(
+                                        topLeft: Radius.circular(15),
+                                        topRight: Radius.circular(15),
+                                        bottomRight: Radius.circular(15),
+                                      )),
+                            child: RichText(
+                                text: TextSpan(
+                                    text: lengthOfText
+                                        ? getData['msgContent']
+                                                .toString()
+                                                .substring(0, 500) +
+                                            '...'
+                                        : getData['msgContent'],
+                                    style: TextStyle(color: Styles.appBarColor),
+                                    children: [
+                                  TextSpan(
+                                      text: lengthOfText ? ' Read More' : '',
+                                      style: TextStyle(color: Colors.blue),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          Fluttertoast.showToast(
+                                              msg: 'handle read more');
+                                        })
+                                ])),
                           ),
                         ),
+
+
+                        //Time Container
                         Container(
                           margin: EdgeInsets.only(
                             left: isSendByMe ? 0.0 : 10.0,
@@ -429,103 +392,87 @@ class _ChattingPageState extends State<ChattingPage> {
                   ));
   }
 
-  Widget messageStream() {
-    return StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection('messages')
-            .doc(chatId)
-            .collection(chatId)
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return Container();
-
-          if (snapshot.hasError) return Center(child: Text('$snapshot.error'));
-
-          if (snapshot.connectionState == ConnectionState.waiting)
-            return Center(child: circularProgress());
-
-          return Scrollbar(
-            controller: scrollController,
-            thickness: 3.0,
-            radius: Radius.circular(10.0),
-            child: ListView.builder(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                controller: scrollController,
-                reverse: true,
-                itemCount: snapshot.data.documents.length,
-                itemBuilder: (context, index) {
-                  final DocumentSnapshot documentSnapshot =
-                      snapshot.data.documents[index];
-                  return InkWell(
-                    onTap: () {
-                      Fluttertoast.showToast(msg: 'Pressed');
-                    },
-                    onLongPress: () {
-                      Fluttertoast.showToast(msg: 'Long Pressed');
-                    },
-                    child: createMessageListItem(index, documentSnapshot),
-                  );
-                }),
-          );
-        });
-  }
-
   createMessagesList() {
     return Flexible(
         child:
-            chatId == '' ? Center(child: circularProgress()) : messageStream());
+            chatId == '' ? Center(child: circularProgress()) : streamMessages());
   }
 
   createInputField() {
     return Container(
+      margin: EdgeInsets.only(bottom: 5.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           SizedBox(
             width: 5.0,
           ),
 
-          //Emoji or Gif Button
-          GestureDetector(onTap: getStickers, child: Icon(Icons.tag_faces)),
-          SizedBox(
-            width: 10,
-          ),
-
-          //Image Button
-          GestureDetector(onTap: getImage, child: Icon(Icons.image)),
-
           //Text Field
           Flexible(
             child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
+              margin: EdgeInsets.symmetric(horizontal: 5.0),
               decoration: BoxDecoration(
                 color: Styles.appBarColor,
                 borderRadius: BorderRadius.circular(20.0),
               ),
-              child: TextField(
-                cursorColor: Colors.white,
-                style: TextStyle(color: Colors.white),
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.newline,
-                textAlign: TextAlign.justify,
-                maxLines: 2,
-                controller: messageController,
-                focusNode: keyboardFocusNode,
-                decoration: InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10.0),
-                    hintText: 'Start Conversation',
-                    hintStyle:
-                        TextStyle(color: Colors.white70.withOpacity(0.5))),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  //Image Button
+                  Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Container(
+                      height: 35,
+                      width: 35,
+                      decoration: BoxDecoration(
+                          color: Color.fromRGBO(192, 214, 255, 5.0),
+                          shape: BoxShape.circle),
+                      child: GestureDetector(
+                          onTap: getImageFromGallery,
+                          child: Icon(Icons.image,
+                              color: Styles.appBarColor, size: 20)),
+                    ),
+                  ),
+
+                  //TextField
+                  Flexible(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 5.0, vertical: 2.0),
+                      child: Scrollbar(
+                        controller: textFieldController,
+                        thickness: 3.0,
+                        radius: Radius.circular(10.0),
+                        child: TextField(
+                          scrollController: textFieldController,
+                          cursorColor: Colors.white,
+                          style: TextStyle(color: Colors.white),
+                          textCapitalization: TextCapitalization.sentences,
+                          textInputAction: TextInputAction.newline,
+                          textAlign: TextAlign.justify,
+                          maxLines: 7,
+                          minLines: 1,
+                          controller: messageController,
+                          focusNode: keyboardFocusNode,
+                          decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'Start Conversation',
+                              hintStyle: TextStyle(
+                                  color: Colors.white70.withOpacity(0.5))),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
           //Send Button
           hideSendButton
-              ? Container():
-               GestureDetector(
+              ? Container()
+              : GestureDetector(
                   onTap: () {
                     if (messageController.text.isNotEmpty &&
                         messageController.text.trim().isNotEmpty) {
@@ -547,10 +494,12 @@ class _ChattingPageState extends State<ChattingPage> {
     );
   }
 
-  onMessageSend(String msgContent, int type) {
+  onMessageSend(String msgContent, int type) async{
+
     // type 0 = text,
     // type 1 = image,
     // type 2 = Emoji
+
 
     if (msgContent.isNotEmpty) {
       FirebaseFirestore.instance
@@ -566,145 +515,169 @@ class _ChattingPageState extends State<ChattingPage> {
         'msgContent': msgContent,
         'type': type,
         'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-      });
-    }
 
+      });
+
+    }
     print('$msgContent, type');
   }
 
-  // AppBar defaultAppBar() {
-  //   return AppBar(
-  //    backgroundColor: Styles.appBarColor,
-  //     leading: IconButton(
-  //       onPressed: () async{
-  //         Navigator.pushAndRemoveUntil(
-  //             context,
-  //             MaterialPageRoute(builder: (context) => HomePage()),
-  //             (route) => false);
-  //       },
-  //       icon: Icon(Icons.chevron_left),
-  //     ),
-  //     title: Text(widget.receiverName,
-  //         style: TextStyle(
-  //           fontSize: 17.0,
-  //         )),
-  //     centerTitle: true,
-  //     actions: [
-  //       GestureDetector(
-  //         onTap: (){
-  //           showDialog(context: (context),
-  //           builder: (context)=>ChatProfilePicView(
-  //             profileImage: widget.receiverAvatar,
-  //           ));
-  //         },
-  //           child: Padding(
-  //           padding: EdgeInsets.all(8.0),
-  //           child: CircleAvatar(
-  //             backgroundColor: Colors.black,
-  //             backgroundImage:
-  //                 CachedNetworkImageProvider(widget.receiverAvatar),
-  //           ),
-  //         ),
-  //       )
-  //     ],
-  // );
-  // }
+  Future<void> deleteUser()  {
+  return FirebaseFirestore.instance.collection('messages')
+        .doc(chatId)
+        .collection(chatId)
+        .doc('1606555500051')
+        .delete()
+        .then((value) => print("User Deleted"))
+        .catchError((error) => print("Failed to delete user: $error"));
+
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Styles.appBarColor,
-        leading: IconButton(
-          onPressed: () async {
-            Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()),
-                (route) => false);
-          },
-          icon: Icon(Icons.chevron_left),
-        ),
-        title: Text(widget.receiverName,
-            style: TextStyle(
-              fontSize: 17.0,
-            )),
-        centerTitle: true,
-        actions: [
-          GestureDetector(
-            onTap: () {
-              showDialog(
-                  context: (context),
-                  builder: (context) => ChatProfilePicView(
-                        profileImage: widget.receiverAvatar,
-                      ));
-            },
-            child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                  backgroundColor: Colors.black,
-                  backgroundImage:
-                      CachedNetworkImageProvider(widget.receiverAvatar),
-                ),
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-         isOnline? Positioned(
-                      top: 25.0,
-                      right: 31.0,
-                      child: Container(
-                          height: 9,
-                          width: 9,
-                          decoration: BoxDecoration(
-                              color: Colors.green[400],
-                              shape: BoxShape.circle
-                          )
-                      )
-                  ) : Container(),
-                ]
-              ),
-            ),
-          )
-        ],
-      ),
-      body: Stack(
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              //Messages List
-              createMessagesList(),
-
-              //Display Stickers
-              isDisplaySticker ? createStickers() : Container(),
-
-              // //Input Field
-              createInputField()
-            ],
-          ),
-          
-       hideScrollDownwardButton? Container():
-        Positioned(
-              top: 570.0,
-              left: 320.0,
-              child: GestureDetector(
-                onTap: () {
-                  scrollController.animateTo(0.0,
-                      curve: Curves.easeOut,
-                      duration: const Duration(milliseconds: 300));
+    return ChangeNotifierProvider<InternetConnectivity>(
+      create: (context)=> InternetConnectivity(),
+      child: Consumer<InternetConnectivity>(
+        builder: (context, InternetConnectivity internetConnectivity, child){
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: Styles.appBarColor,
+              leading: IconButton(
+                onPressed: () async {
+                  Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomePage()),
+                          (route) => false);
                 },
-                child: Container(
-                    height: 28,
-                    width: 28,
-                    decoration: BoxDecoration(
-                        color: Styles.appBarColor, shape: BoxShape.circle),
-                    child: Icon(
-                      Icons.arrow_downward,
-                      size: 20,
-                      color: Colors.white,
-                    )),
-              ))
-        ],
+                icon: Icon(Icons.chevron_left),
+              ),
+              title: Column(
+                children: [
+                  SizedBox(height: 10.0),
+                  Text(widget.receiverName ?? '',
+                      style: TextStyle(
+                        fontSize: 15.0,
+                      )),
+                  SizedBox(height: 3.0),
+                  Text(internetConnectivity.getIsOnline? 'Online' : 'Offline',
+                      style: TextStyle(
+                        fontSize: 10.0,
+                      ))
+                ],
+              ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  onPressed: deleteUser,
+                  icon: Icon(Icons.delete)
+                ),
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                        context: (context),
+                        builder: (context) => ChatProfilePicView(
+                          profileImage: widget.receiverAvatar ?? '',
+                        ));
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Stack(children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.black,
+                        backgroundImage:
+                        CachedNetworkImageProvider(widget.receiverAvatar),
+                      ),
+                      internetConnectivity.getIsOnline?
+                           Positioned(
+                          top: 20.0,
+                          right: 0.0,
+                          left: 33.0,
+                          child: Container(
+                              height: 25,
+                              width: 25,
+                              decoration: BoxDecoration(
+                                  color: Color.fromRGBO(0, 250, 0, 1.0),
+                                  border:
+                                  Border.all(width: 0.5, color: Colors.white),
+                                  shape: BoxShape.circle)))
+                          : Container(),
+                    ]),
+                  ),
+                )
+              ],
+            ),
+            body: Stack(
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    //Messages List
+                    createMessagesList(),
+
+                    //Input Field
+                    createInputField()
+                  ],
+                ),
+                hideScrollDownwardButton
+                    ? Container()
+                    : Positioned(
+                    top: 570.0,
+                    left: 320.0,
+                    child: GestureDetector(
+                      onTap: () {
+                        scrollController.animateTo(0.0,
+                            curve: Curves.easeOut,
+                            duration: const Duration(milliseconds: 300));
+                      },
+                      child: Container(
+                          height: 28,
+                          width: 28,
+                          decoration: BoxDecoration(
+                              color: Styles.appBarColor, shape: BoxShape.circle),
+                          child: Icon(
+                            Icons.arrow_downward,
+                            size: 20,
+                            color: Colors.white,
+                          )),
+                    ))
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
+
+
+// read more comment
+/*Text(
+getData['msgContent'].toString().length <= 200?
+getData['msgContent'] :
+getData['msgContent'].toString()
+    .substring(0, 201) + ' read more',
+style: TextStyle(color: Styles.appBarColor),
+)
+
+Text(
+getData['msgContent'],
+style: TextStyle(color: Styles.appBarColor),
+),*/
+
+
+// scroll controller comment
+/*
+scrollListener(){
+     if(scrollController.offset >= scrollController.position.maxScrollExtent
+      && !scrollController.position.outOfRange){
+         setState(() {
+           hideScrollDownwardButton = false;
+           Fluttertoast.showToast(msg: 'Reach Bottom');
+
+         });
+     }
+   }*/
+
+

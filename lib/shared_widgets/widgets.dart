@@ -102,17 +102,16 @@ Widget loadingData() {
   );
 }
 
-
 Widget noUsersData({String users, String info}) {
   return Center(
       child: Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      noData(),
-      SizedBox(height: 10.0),
-      Text(users),
-      SizedBox(height: 5.0),
-      Text(info)
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+            noData(),
+            SizedBox(height: 10.0),
+            Text(users),
+            SizedBox(height: 5.0),
+            Text(info)
     ],
   ));
 }
@@ -173,12 +172,11 @@ Widget noData() {
   );
 }
 
-
 Widget chatImagePlaceholder() {
   return Shimmer.fromColors(
-     baseColor: Colors.grey[300],
-     highlightColor: Colors.white,
-      child: Container(
+    baseColor: Colors.grey[300],
+    highlightColor: Colors.white,
+    child: Container(
       width: 200.0,
       height: 200.0,
       clipBehavior: Clip.hardEdge,
@@ -189,4 +187,3 @@ Widget chatImagePlaceholder() {
     ),
   );
 }
-

@@ -8,8 +8,6 @@ class ChatProfilePicView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetAnimationCurve: Curves.slowMiddle,
-      insetAnimationDuration: Duration(seconds: 1),
       child: Material(
            clipBehavior: Clip.hardEdge,
             borderRadius: BorderRadius.circular(5.0),

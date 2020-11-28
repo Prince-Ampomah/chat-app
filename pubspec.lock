@@ -36,6 +36,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.0-nullsafety.1"
+  circular_menu:
+    dependency: "direct dev"
+    description:
+      name: circular_menu
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.1"
   clock:
     dependency: transitive
     description:
@@ -113,6 +120,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
+  data_connection_checker:
+    dependency: "direct dev"
+    description:
+      name: data_connection_checker
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.4"
   fake_async:
     dependency: transitive
     description:

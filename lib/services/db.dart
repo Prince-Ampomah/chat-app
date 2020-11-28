@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DatabaseServices {
   String uid;
+
   DatabaseServices({this.uid});
 
-
-//Users Info DB
+  //Users Info DB
   CollectionReference usersCollection =
       FirebaseFirestore.instance.collection('users');
 
@@ -15,13 +15,12 @@ class DatabaseServices {
     });
   }
 
-
-//Phone Token DB
+  //Phone Token DB
   CollectionReference phoneTokenCollection =
       FirebaseFirestore.instance.collection('phone_token');
 
   uploadPhoneToken(String token) async {
-    return await phoneTokenCollection.doc(uid).set({'token': token})
-    .catchError((error)=>print('uploading phone token error: $error'));
+    return await phoneTokenCollection.doc(uid).set({'token': token}).catchError(
+        (error) => print('uploading phone token error: $error'));
   }
 }
