@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class InternetConnectivity extends ChangeNotifier{
 
+  SharedPreferences preferences;
+  String currentUserId;
   bool _isOnline;
   bool get getIsOnline => _isOnline;
 
@@ -17,6 +20,9 @@ class InternetConnectivity extends ChangeNotifier{
   StreamSubscription<DataConnectionStatus> listener;
 
   checkConnection() async{
+    preferences = await SharedPreferences.getInstance();
+    currentUserId = preferences.getString('id');
+    print('inter: $currentUserId');
 
     listener = DataConnectionChecker().onStatusChange.listen((status) {
       switch(status){

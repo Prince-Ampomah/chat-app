@@ -28,6 +28,7 @@ class ThemeChanger extends ChangeNotifier {
     loadTheme();
   }
 
+
   toggleTheme() {
     _isDarkMode = !_isDarkMode;
     saveTheme();

@@ -18,7 +18,7 @@ class _SettingsPhoto extends State<SettingsPhotoView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Styles.appBarColor,
-        title: Text('Setting Image'),
+        title: Text('Full Image'),
         elevation: 0.0,
       ),
       body: Container(

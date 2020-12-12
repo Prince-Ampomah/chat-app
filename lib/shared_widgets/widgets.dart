@@ -42,7 +42,7 @@ onChangeRoute(String item, BuildContext context) async {
 Widget loadingData() {
   return Container(
     child: ListView.builder(
-        itemCount: 8,
+        itemCount: 4,
         itemBuilder: (context, index) {
           int offset = 0;
           offset += 7;
@@ -58,8 +58,8 @@ Widget loadingData() {
                 children: <Widget>[
                   //Image
                   Container(
-                    height: 65,
-                    width: 65,
+                    height: 60,
+                    width: 60,
                     decoration: BoxDecoration(
                       color: Colors.grey,
                       shape: BoxShape.circle,
@@ -76,20 +76,20 @@ Widget loadingData() {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Container(
-                          height: 18,
+                          height: 16,
                           decoration: BoxDecoration(
                               color: Colors.grey,
-                              borderRadius: BorderRadius.circular(30.0)),
+                              borderRadius: BorderRadius.circular(5.0)),
                         ),
                         SizedBox(
                           height: 15.0,
                         ),
                         Container(
-                          height: 18,
+                          height: 16,
                           width: 200,
                           decoration: BoxDecoration(
                               color: Colors.grey,
-                              borderRadius: BorderRadius.circular(30.0)),
+                              borderRadius: BorderRadius.circular(5.0)),
                         ),
                       ],
                     ),

@@ -1,6 +1,8 @@
 import 'package:chatapp/animation/routing_page_animation.dart';
 import 'package:chatapp/model/chatted_users_model.dart';
+import 'package:chatapp/model/user_model.dart';
 import 'package:chatapp/screens/all_users_page.dart';
+import 'package:chatapp/screens/chat_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
 import 'package:flutter/cupertino.dart';
@@ -23,15 +25,15 @@ class _HomePageState extends State<HomePage> {
 
   String info = 'All chat users will be listed here,\nonce you start chatting';
 
-  Future<QuerySnapshot> futureBuilderResult;
-  Stream<QuerySnapshot> streamResult;
+  Stream<QuerySnapshot> streamAllChattedUsers;
+  Stream<QuerySnapshot> streamMessages;
+
 
   @override
   void initState() {
     readFromLocal();
-    // streamChattedUsers();
-    loadChattedUsers();
-//    InternetConnectivity().checkConnection();
+    streamMessagesList();
+    streamChattedUsers();
     super.initState();
   }
 
@@ -45,54 +47,64 @@ class _HomePageState extends State<HomePage> {
   void readFromLocal() async {
     preferences = await SharedPreferences.getInstance();
     id = preferences.getString('id');
-    // chatId = preferences.getString('chatId');
-    // print('SAVED CHAT ID: $chatId');
     setState(() {});
   }
 
-  loadChattedUsers() async {
+  streamChattedUsers() async{
+    preferences = await SharedPreferences.getInstance();
+    chatId = preferences.getString('chatId');
+
+    Stream<QuerySnapshot> allChattedUsers = FirebaseFirestore.instance
+        .collection('chattedUsers')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+    setState(() {
+      streamAllChattedUsers = allChattedUsers;
+    });
+  }
+
+  streamMessagesList() async{
     preferences = await SharedPreferences.getInstance();
     chatId = preferences.getString('chatId');
     setState(() {});
 
-    Future<QuerySnapshot> allChattedUsers = FirebaseFirestore.instance
+    Stream<QuerySnapshot> listAllMessages = FirebaseFirestore.instance
         .collection('messages')
         .doc(chatId)
         .collection(chatId)
         .orderBy('timestamp', descending: true)
-        .get()
-        .whenComplete(() => print('COMPLETED'));
+        .snapshots();
     setState(() {
-      futureBuilderResult = allChattedUsers;
+      streamMessages = listAllMessages;
     });
   }
 
-  showChattedList() {
-    return FutureBuilder(
-      future: futureBuilderResult,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return Center(child: loadingData());
+  showChattedUsers() {
+    return StreamBuilder(
+      stream: streamAllChattedUsers,
+      builder: (context, chattedUsersSnapshot) {
+            if(!chattedUsersSnapshot.hasData)
+              return Center(child: loadingData());
+            if (chattedUsersSnapshot.hasError)
+              return Center(child: Text('Error: ${chattedUsersSnapshot.error}'));
 
-        if (snapshot.hasError)
-          return Center(child: Text('Error: ${snapshot.error}'));
+            if (chattedUsersSnapshot.connectionState == ConnectionState.waiting)
+              return Center(child: Text('Connecting.....'));
 
-        if (snapshot.connectionState == ConnectionState.waiting)
-          return Center(child: Text('Connecting.....'));
+            return ListView.separated(
+              itemCount: chattedUsersSnapshot.data.documents.length,
+              itemBuilder: (context, index){
+                final DocumentSnapshot documentSnapshot =
+                chattedUsersSnapshot.data.document[index];
+                ChattedUsersModel chattedUsersModel =
+                ChattedUsersModel.fromDocument(documentSnapshot);
+                return ChattedUserResult(
+                  chattedUsersModel: chattedUsersModel,
 
-        print("SNAPSHOT DATA: ${snapshot.hasData}");
-
-        List<UserResult> searchUserResult = [];
-
-        // Fix Problem Here
-        snapshot.data.documents.forEach((doc) {
-          ChattedUserModel chattedUserModel =
-              ChattedUserModel.fromDocument(doc);
-          UserResult userResult = UserResult(
-            chattedUserModel: chattedUserModel,
-          );
-          searchUserResult.add(userResult);
-        });
-        return ListView(children: searchUserResult);
+                );
+              },
+              separatorBuilder: (context, index)=>Divider(),
+            );
       },
     );
   }
@@ -100,81 +112,6 @@ class _HomePageState extends State<HomePage> {
   showNoChatList() {
     return noUsersData(users: 'No Chatted List',info: info);
   }
-
-/*  streamChattedUsers() {
-    Stream<QuerySnapshot> allUsers = FirebaseFirestore.instance
-        .collection('messages')
-        .doc('jNiCHZ557SVmW3yRfESRMbOEFWw2_4NJxrHXHNpXAeGUWIwyKUXP3we73')
-        .collection('jNiCHZ557SVmW3yRfESRMbOEFWw2_4NJxrHXHNpXAeGUWIwyKUXP3we73')
-        .snapshots();
-    setState(() {
-      streamResult = allUsers;
-    });
-  }
-
-  showChattedUsers(){
-    return StreamBuilder(
-      stream: streamResult,
-      builder: (context, snapshot){
-        return ListView.separated(
-            itemCount: snapshot.data.documents.length,
-            itemBuilder: (context, index){
-              final DocumentSnapshot documentSnapshot =
-                  snapshot.data.documents[index];
-              return  FlatButton(
-                onPressed: () {
-                  Fluttertoast.showToast(msg: 'Goes to chatting page');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: <Widget>[
-                      Container(
-                        height: 50,
-                        width: 50,
-                        clipBehavior: Clip.hardEdge,
-                        decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.red, width: 1.5)),
-                      ),
-
-                      SizedBox(
-                        width: 25.0,
-                      ),
-
-                      //Username and AboutMe
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Container(
-                                child: Text(
-                                  documentSnapshot.data()['username'],
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )),
-                            SizedBox(
-                              height: 10.0,
-                            ),
-                            Container(
-                                child: Text(
-                                  documentSnapshot.data()['msgContent'],
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-            separatorBuilder: (context, index)=>Divider(),
-            );
-      },
-    );
-  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -202,31 +139,27 @@ class _HomePageState extends State<HomePage> {
           actions: [popMenu(context)],
           elevation: 0.0,
         ),
-        body:
-            futureBuilderResult != null ? showChattedList() : showNoChatList());
+        body: streamAllChattedUsers!= null? showChattedUsers() : showNoChatList());
   }
 }
 
-class UserResult extends StatelessWidget {
-  final ChattedUserModel chattedUserModel;
-
-  UserResult({this.chattedUserModel});
+class ChattedUserResult extends StatelessWidget {
+  final ChattedUsersModel chattedUsersModel;
+  final MessagesModel messagesModel;
+  ChattedUserResult({this.chattedUsersModel, this.messagesModel});
 
   @override
   Widget build(BuildContext context) {
-    SharedPreferences preferences;
-    return FlatButton(
-      onPressed: () async {
-        preferences = await SharedPreferences.getInstance();
 
-//        Navigator.push(context,
-//            MaterialPageRoute(
-//              builder: (context)=>ChattingPage(
-//
-//              ),
-//            )
-//        );
-        Fluttertoast.showToast(msg: 'Goes to chatting page');
+    return FlatButton(
+      onPressed: () {
+       Navigator.push(context, MaterialPageRoute(
+         builder: (context)=>ChattingPage(
+           receiverId: chattedUsersModel.receiverId,
+           receiverName: chattedUsersModel.receiverName,
+           receiverAvatar: chattedUsersModel.receiverPhoto,
+         )
+       ));
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -234,21 +167,12 @@ class UserResult extends StatelessWidget {
           children: <Widget>[
 
             //Image
-            Container(
-                height: 50,
-                width: 50,
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.red, width: 1.5)),
-                child: CachedNetworkImage(
-                  height: 50,
-                  width: 50,
-                  imageUrl: chattedUserModel.photo,
-                  placeholder: (context, url) => circularProgress(),
-                  errorWidget: (context, url, dynamic)=> Icon(Icons.person)
-
-                )),
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: Styles.appBarColor,
+              backgroundImage: CachedNetworkImageProvider(
+                  chattedUsersModel.receiverPhoto.toString()),
+            ),
 
             SizedBox(
               width: 20.0,
@@ -259,27 +183,25 @@ class UserResult extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Container(
-                      child: Text(
-                    chattedUserModel.username,
+                  Text(
+                    chattedUsersModel.receiverName?? 'Name',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold
+                  fontWeight: FontWeight.bold
                     )
-                  )),
+                  ),
                   SizedBox(
                     height: 10.0,
                   ),
-                  Container(
-                      child: Text(
-                    chattedUserModel.message,
+                  Text(
+                      chattedUsersModel.message?? 'Recent Messages',
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow:TextOverflow.ellipsis ,
                     style: TextStyle(
-                        fontSize: 12.0,
+                    fontSize: 12.0,
                     )
-                  )),
+                  ),
                 ],
               ),
             ),
@@ -289,9 +211,9 @@ class UserResult extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
-                  Text(DateFormat.jm().format(
-                      DateTime.fromMillisecondsSinceEpoch(
-                          int.parse(chattedUserModel.timestamp))),
+                  Text( DateFormat.jm().format(
+                  DateTime.fromMillisecondsSinceEpoch(
+                      int.parse(chattedUsersModel.timestamp)))?? 'time',
                   style: TextStyle(
                     fontSize: 11
                   )),
@@ -325,3 +247,19 @@ class UserResult extends StatelessWidget {
     );
   }
 }
+
+
+/*
+msgSnapshot.data.documents.forEach((doc){
+MessagesModel messagesModel = MessagesModel.fromDocument(doc);
+UserResult userResult = UserResult(
+messagesModel: messagesModel);
+listUserResult.add(userResult);
+});
+
+chattedUsersSnapshot.data.documents.forEach((doc){
+ChattedUsersModel chattedUsersModel = ChattedUsersModel.fromDocument(doc);
+UserResult userResult = UserResult(
+chattedUsersModel: chattedUsersModel);
+listUserResult.add(userResult);
+});*/

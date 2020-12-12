@@ -1,22 +1,48 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ChattedUserModel{
 
-    String username;
-    String photo;
-    String message;
-    String timestamp;
+class ChattedUsersModel{
 
-    ChattedUserModel({this.username, this.photo, this.message, this.timestamp});
+   String receiverId;
+   String receiverName;
+   String receiverPhoto;
+   String chatId;
+   String message;
+   String timestamp;
 
-    factory ChattedUserModel.fromDocument(DocumentSnapshot doc){
-      return ChattedUserModel(
-        username: doc['username'],
-        photo: doc['photoUrl'],
+
+   ChattedUsersModel({this.receiverId, this.receiverName, this.receiverPhoto,
+     this.chatId, this.message, this.timestamp});
+
+   factory ChattedUsersModel.fromDocument(DocumentSnapshot doc){
+     return ChattedUsersModel(
+          receiverId: doc['receiverId'],
+         receiverName: doc['receiverName'],
+         receiverPhoto: doc['receiverPhoto'],
+         chatId: doc['chatId'],
+         message: doc['recentMessages'],
+         timestamp: doc['timestamp']
+
+
+     );
+   }
+
+
+}
+
+class MessagesModel{
+
+  String message;
+  String timestamp;
+
+  MessagesModel({this.message, this.timestamp});
+
+  factory MessagesModel.fromDocument(DocumentSnapshot doc){
+    return MessagesModel(
         message: doc['msgContent'],
         timestamp: doc['timestamp']
-      );
-    }
+    );
+  }
 
 }
 

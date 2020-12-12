@@ -1,4 +1,3 @@
-import 'package:chatapp/animation/routing_page_animation.dart';
 import 'package:chatapp/model/user_model.dart';
 import 'package:chatapp/screens/chat_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
@@ -17,6 +16,7 @@ class AllUsers extends StatefulWidget {
 class _AllUsersState extends State<AllUsers> {
   SharedPreferences preferences;
   String currentUserId;
+  String username;
   ScrollController scrollController;
 
   @override
@@ -29,17 +29,20 @@ class _AllUsersState extends State<AllUsers> {
   readFromLocal() async {
     preferences = await SharedPreferences.getInstance();
     currentUserId = preferences.getString('id');
+    username = preferences.getString('username');
+    Fluttertoast.showToast(
+        msg: 'Logged in as: $username');
+
     setState(() {});
   }
 
-  Stream streamUsers = FirebaseFirestore.instance
-      .collection('users')
-      .orderBy('username', descending: false)
-      .snapshots();
-
   Widget allUsers() {
     return StreamBuilder(
-      stream: streamUsers,
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .orderBy('username', descending: false)
+          .where('username', isNotEqualTo: username)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
           return noUsersData(

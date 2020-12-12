@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:chatapp/constants/constants.dart';
 import 'package:chatapp/internet_connectivity/internet_connectivity.dart';
 import 'package:chatapp/screens/chat_photo_view.dart';
 import 'package:chatapp/screens/chat_profile_pic_view.dart';
 import 'package:chatapp/screens/home_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
+import 'package:chatapp/theme/theme.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
@@ -17,7 +18,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:badges/badges.dart';
 import 'package:provider/provider.dart';
 
 
@@ -40,11 +42,11 @@ class _ChattingPageState extends State<ChattingPage> {
   bool hideSendButton;
   bool showAudioButton;
   bool hideScrollDownwardButton;
+  bool showLongPressedAppBar;
 
   //String Declarations
   String chatId;
   String currentUserId;
-
 
   //Image File Declarations
   File imageFile;
@@ -55,6 +57,9 @@ class _ChattingPageState extends State<ChattingPage> {
   ScrollController scrollController;
   ScrollController textFieldController;
 
+  
+
+
   @override
   void initState() {
     chatId = '';
@@ -62,6 +67,7 @@ class _ChattingPageState extends State<ChattingPage> {
     hideScrollDownwardButton = true;
     hideSendButton = true;
     showAudioButton = true;
+    showLongPressedAppBar = false;
     keyboardFocusNode.addListener(focusNodeListener);
     scrollController = ScrollController();
     textFieldController = ScrollController();
@@ -76,10 +82,10 @@ class _ChattingPageState extends State<ChattingPage> {
 
     if (currentUserId.hashCode <= widget.receiverId.hashCode) {
       chatId = '${currentUserId}_${widget.receiverId}';
-      preferences.setString('chatId', chatId).then((value) => print(value));
+      preferences.setString('chatId', chatId).then((value) => print('save chatId=> $value'));
     } else {
       chatId = '${widget.receiverId}_$currentUserId';
-      preferences.setString('chatId', chatId).then((value) => print(value));
+      preferences.setString('chatId', chatId).then((value) => print('save chatId=> $value'));
       print("chatId: $chatId");
     }
 
@@ -159,7 +165,7 @@ class _ChattingPageState extends State<ChattingPage> {
     });
   }
 
-  Widget streamMessages() {
+  Widget streamMessages(BuildContext context) {
     return StreamBuilder(
         stream: FirebaseFirestore.instance
             .collection('messages')
@@ -187,21 +193,25 @@ class _ChattingPageState extends State<ChattingPage> {
                 itemCount: snapshot.data.documents.length,
                 itemBuilder: (context, index) {
                   final DocumentSnapshot documentSnapshot =
-                  snapshot.data.documents[index];
+                      snapshot.data.documents[index];
                   return InkWell(
-                    onLongPress: deleteUser,
-                    child: createMessageListItem(documentSnapshot),
+                    onLongPress: (){},
+                    child: createMessageListItem(
+                        documentSnapshot, context),
                   );
                 }),
           );
         });
   }
 
-  createMessageListItem(DocumentSnapshot documentSnapshot) {
+  createMessageListItem(DocumentSnapshot documentSnapshot,BuildContext context,) {
+
+
 
     var getData = documentSnapshot.data();
     final bool isSendByMe = getData['sendBy'] == currentUserId;
-    bool lengthOfText = getData['msgContent'].toString().length > 500;
+    bool lengthOfText = getData['msgContent'].toString().length <= 500;
+//  final isOnline = Provider.of<InternetConnectivity>(context);
 
     return Container(
         padding: EdgeInsets.symmetric(horizontal: 1.0, vertical: 10),
@@ -245,52 +255,50 @@ class _ChattingPageState extends State<ChattingPage> {
                           : CrossAxisAlignment.start,
                       children: [
                         //Text Container
-                        InkWell(
-                          onTap:(){Fluttertoast.showToast(msg: 'Text Container Pressed');},
-                          child: Container(
-                            margin: EdgeInsets.only(
-                              right: isSendByMe ? 10.0 : 70.0,
-                              left: isSendByMe ? 70.0 : 10.0,
-                              bottom: 4.0,
-                            ),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 10.0, vertical: 12.0),
-                            decoration: BoxDecoration(
-                                color: isSendByMe
-                                    ? Color.fromRGBO(192, 214, 255, 5.0)
-                                    : Color.fromRGBO(222, 214, 243, 5.0),
-                                borderRadius: isSendByMe
-                                    ? BorderRadius.only(
-                                        topLeft: Radius.circular(15),
-                                        topRight: Radius.circular(15),
-                                        bottomLeft: Radius.circular(15))
-                                    : BorderRadius.only(
-                                        topLeft: Radius.circular(15),
-                                        topRight: Radius.circular(15),
-                                        bottomRight: Radius.circular(15),
-                                      )),
-                            child: RichText(
-                                text: TextSpan(
-                                    text: lengthOfText
-                                        ? getData['msgContent']
-                                                .toString()
-                                                .substring(0, 500) +
-                                            '...'
-                                        : getData['msgContent'],
-                                    style: TextStyle(color: Styles.appBarColor),
-                                    children: [
-                                  TextSpan(
-                                      text: lengthOfText ? ' Read More' : '',
-                                      style: TextStyle(color: Colors.blue),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          Fluttertoast.showToast(
-                                              msg: 'handle read more');
-                                        })
-                                ])),
+                        Container(
+                          margin: EdgeInsets.only(
+                            right: isSendByMe ? 10.0 : 70.0,
+                            left: isSendByMe ? 70.0 : 10.0,
+                            bottom: 4.0,
+                          ),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 10.0, vertical: 12.0),
+                          decoration: BoxDecoration(
+                              color: isSendByMe
+                                  ? Color.fromRGBO(192, 214, 255, 5.0)
+                                  : Color.fromRGBO(222, 214, 243, 5.0),
+                              borderRadius: isSendByMe
+                                  ? BorderRadius.only(
+                                      topLeft: Radius.circular(15),
+                                      topRight: Radius.circular(15),
+                                      bottomLeft: Radius.circular(15))
+                                  : BorderRadius.only(
+                                      topLeft: Radius.circular(15),
+                                      topRight: Radius.circular(15),
+                                      bottomRight: Radius.circular(15),
+                                    )),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: isSendByMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              //Text
+                              SelectableLinkify(
+                                onOpen:  onOpenLink,
+                                text: getData['msgContent'].toString(),
+                                style: TextStyle(color: Styles.appBarColor),
+                                linkStyle: TextStyle(color: Colors.blue),
+                              ),
+
+                              //Ticking Icon
+                              isSendByMe
+                                  ? Icon(Icons.done_all,
+                                      size: 13, color:Colors.blue)
+                                  : SizedBox(),
+                            ],
                           ),
                         ),
-
 
                         //Time Container
                         Container(
@@ -392,10 +400,11 @@ class _ChattingPageState extends State<ChattingPage> {
                   ));
   }
 
-  createMessagesList() {
+  createMessagesList(BuildContext context) {
     return Flexible(
-        child:
-            chatId == '' ? Center(child: circularProgress()) : streamMessages());
+        child: chatId == ''
+            ? Center(child: circularProgress())
+            : streamMessages(context));
   }
 
   createInputField() {
@@ -470,9 +479,7 @@ class _ChattingPageState extends State<ChattingPage> {
           ),
 
           //Send Button
-          hideSendButton
-              ? Container()
-              : GestureDetector(
+          GestureDetector(
                   onTap: () {
                     if (messageController.text.isNotEmpty &&
                         messageController.text.trim().isNotEmpty) {
@@ -494,12 +501,10 @@ class _ChattingPageState extends State<ChattingPage> {
     );
   }
 
-  onMessageSend(String msgContent, int type) async{
-
+  onMessageSend(String msgContent, int type) async {
     // type 0 = text,
     // type 1 = image,
     // type 2 = Emoji
-
 
     if (msgContent.isNotEmpty) {
       FirebaseFirestore.instance
@@ -515,27 +520,42 @@ class _ChattingPageState extends State<ChattingPage> {
         'msgContent': msgContent,
         'type': type,
         'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-
+        'chatId': chatId
+      }).whenComplete(() {
+        FirebaseFirestore.instance
+            .collection('chattedUsers')
+            .doc(chatId)
+            .set({
+          'receiverId': widget.receiverId,
+          'receiverName': widget.receiverName,
+          'receiverPhoto': widget.receiverAvatar,
+          'chatId': chatId,
+          'recentMessages': msgContent,
+          'timestamp' : DateTime.now().millisecondsSinceEpoch.toString()
+        }).catchError((onError){
+          print('$onError');
+        });
       });
-
     }
     print('$msgContent, type');
   }
 
-  Future<void> deleteUser()  {
-  return FirebaseFirestore.instance.collection('messages')
+  Future<void> deleteMessage() async{
+    return FirebaseFirestore.instance
+        .collection('messages')
         .doc(chatId)
         .collection(chatId)
-        .doc('1606555500051')
+        .doc(DateTime.now().millisecondsSinceEpoch.toString())
         .delete()
         .then((value) => print("User Deleted"))
         .catchError((error) => print("Failed to delete user: $error"));
-
   }
 
   @override
   Widget build(BuildContext context) {
+
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    bool isMe = currentUserId == widget.receiverId;
 
     return ChangeNotifierProvider<InternetConnectivity>(
       create: (context)=> InternetConnectivity(),
@@ -544,35 +564,21 @@ class _ChattingPageState extends State<ChattingPage> {
           return Scaffold(
             appBar: AppBar(
               backgroundColor: Styles.appBarColor,
-              leading: IconButton(
-                onPressed: () async {
-                  Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomePage()),
-                          (route) => false);
-                },
-                icon: Icon(Icons.chevron_left),
-              ),
               title: Column(
                 children: [
-                  SizedBox(height: 10.0),
                   Text(widget.receiverName ?? '',
                       style: TextStyle(
                         fontSize: 15.0,
                       )),
-                  SizedBox(height: 3.0),
-                  Text(internetConnectivity.getIsOnline? 'Online' : 'Offline',
+                  Text(isMe? ('${internetConnectivity.getIsOnline? '' : ''}') :
+                  ('${internetConnectivity.getIsOnline? 'online' : 'last seen'}'),
                       style: TextStyle(
-                        fontSize: 10.0,
-                      ))
+                        fontSize: 15.0,
+                      )),
                 ],
               ),
               centerTitle: true,
               actions: [
-                IconButton(
-                  onPressed: deleteUser,
-                  icon: Icon(Icons.delete)
-                ),
                 GestureDetector(
                   onTap: () {
                     showDialog(
@@ -589,8 +595,8 @@ class _ChattingPageState extends State<ChattingPage> {
                         backgroundImage:
                         CachedNetworkImageProvider(widget.receiverAvatar),
                       ),
-                      internetConnectivity.getIsOnline?
-                           Positioned(
+/*                internetConnectivity.getIsOnline
+                          ? Positioned(
                           top: 20.0,
                           right: 0.0,
                           left: 33.0,
@@ -599,10 +605,10 @@ class _ChattingPageState extends State<ChattingPage> {
                               width: 25,
                               decoration: BoxDecoration(
                                   color: Color.fromRGBO(0, 250, 0, 1.0),
-                                  border:
-                                  Border.all(width: 0.5, color: Colors.white),
+                                  border: Border.all(
+                                      width: 0.5, color: Colors.white),
                                   shape: BoxShape.circle)))
-                          : Container(),
+                          : Container(),*/
                     ]),
                   ),
                 )
@@ -614,7 +620,7 @@ class _ChattingPageState extends State<ChattingPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     //Messages List
-                    createMessagesList(),
+                    createMessagesList(context),
 
                     //Input Field
                     createInputField()
@@ -635,7 +641,8 @@ class _ChattingPageState extends State<ChattingPage> {
                           height: 28,
                           width: 28,
                           decoration: BoxDecoration(
-                              color: Styles.appBarColor, shape: BoxShape.circle),
+                              color: Styles.appBarColor,
+                              shape: BoxShape.circle),
                           child: Icon(
                             Icons.arrow_downward,
                             size: 20,
@@ -651,8 +658,30 @@ class _ChattingPageState extends State<ChattingPage> {
   }
 }
 
+//Rich Text comment
+/*RichText(
+text: TextSpan(
+text: lengthOfText
+? getData['msgContent']
+.toString()
+    .substring(0, 500) +
+'...'
+: getData['msgContent'],
+style: TextStyle(color: Styles.appBarColor),
+children: [
+TextSpan(
+text: lengthOfText ? ' Read More' : '',
+style: TextStyle(color: Colors.blue),
+recognizer: TapGestureRecognizer()
+..onTap = () {
+Fluttertoast.showToast(
+msg: 'handle read more');
+})
+]))
 
-// read more comment
+ read more comment*/
+
+//Text comment
 /*Text(
 getData['msgContent'].toString().length <= 200?
 getData['msgContent'] :
@@ -666,7 +695,6 @@ getData['msgContent'],
 style: TextStyle(color: Styles.appBarColor),
 ),*/
 
-
 // scroll controller comment
 /*
 scrollListener(){
@@ -679,5 +707,3 @@ scrollListener(){
          });
      }
    }*/
-
-

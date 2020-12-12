@@ -49,8 +49,12 @@ dev_dependencies:
   cached_network_image: ^2.3.3
   image_picker: ^0.6.7+14
   shimmer: ^1.1.2
-  circular_menu: ^1.1.1
   data_connection_checker: ^0.3.4
+  linkify_text: ^0.0.7
+  flutter_linkify: ^4.0.2
+  url_launcher: ^5.7.10
+  badges: ^1.1.4
+
 
 
 
