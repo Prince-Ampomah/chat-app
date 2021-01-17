@@ -1,4 +1,4 @@
-import 'package:chatapp/services/db.dart';
+/*import 'package:chatapp/services/db.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class PhoneToken{
@@ -16,6 +16,6 @@ class PhoneToken{
   }
 
 
-}
+}*/
 
 

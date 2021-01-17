@@ -33,7 +33,9 @@ class _AllUsersState extends State<AllUsers> {
     Fluttertoast.showToast(
         msg: 'Logged in as: $username');
 
-    setState(() {});
+    if(this.mounted){
+      setState(() {});
+    }
   }
 
   Widget allUsers() {
@@ -46,8 +48,7 @@ class _AllUsersState extends State<AllUsers> {
       builder: (context, snapshot) {
         if (!snapshot.hasData)
           return noUsersData(
-              users: 'No Users',
-              info: 'All users will be listed here, once they log in');
+              info: 'No Users\n All users will be listed here, once they log in');
         if (snapshot.hasError) return Text('${snapshot.error}');
         if (snapshot.connectionState == ConnectionState.waiting)
           return loadingData();

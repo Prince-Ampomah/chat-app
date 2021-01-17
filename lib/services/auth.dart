@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class AuthServices {
   FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -20,9 +21,15 @@ class AuthServices {
   }
 
   Future<bool> signIn() async {
-    try {
+    try { 
       //Authenticate Google Account
       GoogleSignInAccount googleSignInAccount = await _googleSign.signIn();
+
+      //execute when user do not select account from the dialog
+      if(googleSignInAccount == null){
+        print('Google account not selected');
+        Fluttertoast.showToast(msg: 'Account not selected');
+      }
       GoogleSignInAuthentication googleAuth =
           await googleSignInAccount.authentication;
       AuthCredential authCredential = GoogleAuthProvider.credential(
@@ -42,6 +49,7 @@ class AuthServices {
 
         //save new user info
         if (docSnapshot.length == 0) {
+          //Details of current user
           Map<String, dynamic> userDetails = {
             'id': user.uid,
             'username': user.displayName,
@@ -51,28 +59,33 @@ class AuthServices {
             'chattingWith': null
           };
 
+          //save user details in database
           DatabaseServices databaseServices = DatabaseServices(uid: user.uid);
           databaseServices.uploadUserInfo(userDetails: userDetails);
 
-          
           //Store User Info on local storage
           currentUser = user;
           preferences = await SharedPreferences.getInstance();
           await preferences.setString('id', currentUser.uid);
           await preferences.setString('username', currentUser.displayName);
           await preferences.setString('photoUrl', currentUser.photoURL);
-        } else {
+        }
+        else {
           await preferences.setString('id', docSnapshot[0]['id']);
           await preferences.setString('username', docSnapshot[0]['username']);
           await preferences.setString('photoUrl', docSnapshot[0]['photoUrl']);
           await preferences.setString('aboutMe', docSnapshot[0]['aboutMe']);
-          
+
         }
       }
-
       _firebaseUser(user);
     } catch (e) {
-      print(e.toString());
+      print('AUTH ERROR: ${e.toString()}');
+      switch(e.code){
+        case 'network_error':
+          print('NETWORK ERROR');
+          break;
+      }
     }
 
     return Future.value(true);
@@ -83,8 +96,9 @@ class AuthServices {
       await _firebaseAuth.signOut();
       await _googleSign.disconnect();
       await _googleSign.signOut();
+
     } catch (e) {
-      print('${e.toString()}: Error Signing Out');
+      print('Error Signing Out: ${e.toString()}');
     }
   }
 }

@@ -9,13 +9,10 @@ class AuthListener extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Provider.of<FirebaseUserModel>(context);
 
-    if(user != null){
+    if (user != null) {
       return HomePage();
-    }
-    else{
+    } else {
       return SignIn();
     }
-
-
   }
 }

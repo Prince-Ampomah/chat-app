@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shimmer/shimmer.dart';
 
+//Circular Progress Bar
 Widget circularProgress() {
   return CircularProgressIndicator(
     valueColor: AlwaysStoppedAnimation<Color>(Styles.appBarColor),
   );
 }
 
+// Pop Up Menu
 Widget popMenu(BuildContext context) {
   return PopupMenuButton<String>(
     itemBuilder: (context) {
@@ -102,14 +104,13 @@ Widget loadingData() {
   );
 }
 
-Widget noUsersData({String users, String info}) {
+Widget noUsersData({String info}) {
   return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
             noData(),
             SizedBox(height: 10.0),
-            Text(users),
             SizedBox(height: 5.0),
             Text(info)
     ],
@@ -172,6 +173,7 @@ Widget noData() {
   );
 }
 
+//shimmer effect for images
 Widget chatImagePlaceholder() {
   return Shimmer.fromColors(
     baseColor: Colors.grey[300],
@@ -186,4 +188,21 @@ Widget chatImagePlaceholder() {
       ),
     ),
   );
+}
+
+
+GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
+showSnackbar(String content) {
+  SnackBar snackBar = SnackBar(
+    content: Text(
+      content,
+      textAlign: TextAlign.center,
+    ),
+    behavior: SnackBarBehavior.fixed,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(5)),
+    ),
+  );
+  scaffoldKey.currentState.showSnackBar(snackBar);
 }

@@ -1,7 +1,7 @@
 import 'package:chatapp/animation/routing_page_animation.dart';
+import 'package:chatapp/constants/strings.dart';
 import 'package:chatapp/model/chatted_users_model.dart';
-import 'package:chatapp/model/user_model.dart';
-import 'package:chatapp/screens/all_users_page.dart';
+import 'package:chatapp/screens/signed_in_users_page.dart';
 import 'package:chatapp/screens/chat_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -23,16 +22,12 @@ class _HomePageState extends State<HomePage> {
   String id;
   String chatId;
 
-  String info = 'All chat users will be listed here,\nonce you start chatting';
-
   Stream<QuerySnapshot> streamAllChattedUsers;
   Stream<QuerySnapshot> streamMessages;
-
 
   @override
   void initState() {
     readFromLocal();
-    streamMessagesList();
     streamChattedUsers();
     super.initState();
   }
@@ -43,14 +38,13 @@ class _HomePageState extends State<HomePage> {
 //    super.dispose();
 //  }
 
-
   void readFromLocal() async {
     preferences = await SharedPreferences.getInstance();
     id = preferences.getString('id');
     setState(() {});
   }
 
-  streamChattedUsers() async{
+  streamChattedUsers() async {
     preferences = await SharedPreferences.getInstance();
     chatId = preferences.getString('chatId');
 
@@ -63,7 +57,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  streamMessagesList() async{
+  streamMessagesList() async {
     preferences = await SharedPreferences.getInstance();
     chatId = preferences.getString('chatId');
     setState(() {});
@@ -83,34 +77,32 @@ class _HomePageState extends State<HomePage> {
     return StreamBuilder(
       stream: streamAllChattedUsers,
       builder: (context, chattedUsersSnapshot) {
-            if(!chattedUsersSnapshot.hasData)
-              return Center(child: loadingData());
-            if (chattedUsersSnapshot.hasError)
-              return Center(child: Text('Error: ${chattedUsersSnapshot.error}'));
+        if (!chattedUsersSnapshot.hasData) return Center(child: loadingData());
+        if (chattedUsersSnapshot.hasError)
+          return Center(child: Text('Error: ${chattedUsersSnapshot.error}'));
 
-            if (chattedUsersSnapshot.connectionState == ConnectionState.waiting)
-              return Center(child: Text('Connecting.....'));
+        if (chattedUsersSnapshot.connectionState == ConnectionState.waiting)
+          return Center(child: Text('Connecting.....'));
 
-            return ListView.separated(
-              itemCount: chattedUsersSnapshot.data.documents.length,
-              itemBuilder: (context, index){
-                final DocumentSnapshot documentSnapshot =
-                chattedUsersSnapshot.data.document[index];
-                ChattedUsersModel chattedUsersModel =
+        return ListView.separated(
+          itemCount: chattedUsersSnapshot.data.documents.length,
+          itemBuilder: (context, index) {
+            final DocumentSnapshot documentSnapshot =
+                chattedUsersSnapshot.data.documents[index];
+            ChattedUsersModel chattedUsersModel =
                 ChattedUsersModel.fromDocument(documentSnapshot);
-                return ChattedUserResult(
-                  chattedUsersModel: chattedUsersModel,
-
-                );
-              },
-              separatorBuilder: (context, index)=>Divider(),
+            return ChattedUserResult(
+              chattedUsersModel: chattedUsersModel,
             );
+          },
+          separatorBuilder: (context, index) => Divider(),
+        );
       },
     );
   }
 
   showNoChatList() {
-    return noUsersData(users: 'No Chatted List',info: info);
+    return noUsersData(info: info);
   }
 
   @override
@@ -122,11 +114,10 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
                 context,
                 AnimatePageRoute(
-                    widget: AllUsers(),
-                    alignment: Alignment.bottomRight,
-                    duration: Duration(milliseconds: 500),
-                )
-            );
+                  widget: AllUsers(),
+                  alignment: Alignment.bottomRight,
+                  duration: Duration(milliseconds: 500),
+                ));
           },
           child: Icon(
             Icons.message,
@@ -139,7 +130,9 @@ class _HomePageState extends State<HomePage> {
           actions: [popMenu(context)],
           elevation: 0.0,
         ),
-        body: streamAllChattedUsers!= null? showChattedUsers() : showNoChatList());
+        body: streamAllChattedUsers != null
+            ? showChattedUsers()
+            : showNoChatList());
   }
 }
 
@@ -150,22 +143,21 @@ class ChattedUserResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return FlatButton(
       onPressed: () {
-       Navigator.push(context, MaterialPageRoute(
-         builder: (context)=>ChattingPage(
-           receiverId: chattedUsersModel.receiverId,
-           receiverName: chattedUsersModel.receiverName,
-           receiverAvatar: chattedUsersModel.receiverPhoto,
-         )
-       ));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ChattingPage(
+                      receiverId: chattedUsersModel.receiverId,
+                      receiverName: chattedUsersModel.receiverName,
+                      receiverAvatar: chattedUsersModel.receiverPhoto,
+                    )));
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
           children: <Widget>[
-
             //Image
             CircleAvatar(
               radius: 25,
@@ -183,25 +175,19 @@ class ChattedUserResult extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    chattedUsersModel.receiverName?? 'Name',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                  fontWeight: FontWeight.bold
-                    )
-                  ),
+                  Text(chattedUsersModel.receiverName ?? 'Name',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(
                     height: 10.0,
                   ),
-                  Text(
-                      chattedUsersModel.message?? 'Recent Messages',
-                    maxLines: 1,
-                    overflow:TextOverflow.ellipsis ,
-                    style: TextStyle(
-                    fontSize: 12.0,
-                    )
-                  ),
+                  Text(chattedUsersModel.message ?? 'Recent Messages',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.0,
+                      )),
                 ],
               ),
             ),
@@ -211,13 +197,12 @@ class ChattedUserResult extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
-                  Text( DateFormat.jm().format(
-                  DateTime.fromMillisecondsSinceEpoch(
-                      int.parse(chattedUsersModel.timestamp)))?? 'time',
-                  style: TextStyle(
-                    fontSize: 11
-                  )),
-
+                  Text(
+                      DateFormat.jm().format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                  int.parse(chattedUsersModel.timestamp))) ??
+                          'time',
+                      style: TextStyle(fontSize: 11)),
                   SizedBox(
                     height: 10.0,
                   ),
@@ -229,14 +214,9 @@ class ChattedUserResult extends StatelessWidget {
                       color: Styles.appBarColor,
                       borderRadius: BorderRadius.circular(40),
                     ),
-                    child: Text(
-                      '1',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.0
-                      )
-                    ),
+                    child: Text('1',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 11.0)),
                   )
                 ],
               ),
@@ -247,7 +227,6 @@ class ChattedUserResult extends StatelessWidget {
     );
   }
 }
-
 
 /*
 msgSnapshot.data.documents.forEach((doc){

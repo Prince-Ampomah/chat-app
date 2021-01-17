@@ -19,27 +19,32 @@ class _SignInState extends State<SignIn> {
       setState(() => isLoading = true);
       await authServices.signIn();
     } catch (e) {
-      print('WHEN ACCOUNT IS NOT SELECTED ERROR: ${e.toString()}');
-      Fluttertoast.showToast(msg: 'No Account Selected');
-      setState(() {
-        isLoading = false;
-      });
+      print('ERROR: ${e.toString()}');
+      if(this.mounted){
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
 
+    //check  internet connectivity
     bool result = await DataConnectionChecker().hasConnection;
     if (result == false) {
-      setState(() {
-        isLoading = false;
-      });
-      Fluttertoast.showToast(msg: 'No Internet Connection');
+      if(this.mounted){
+        setState(() {
+          isLoading = false;
+        });
+      }
+
+      Fluttertoast.showToast(msg: 'Check your connection');
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        key: scaffoldKey,
         body: Container(
           alignment: Alignment.center,
           child: Column(

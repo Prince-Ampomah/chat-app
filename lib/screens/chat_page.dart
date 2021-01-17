@@ -4,10 +4,8 @@ import 'package:chatapp/constants/constants.dart';
 import 'package:chatapp/internet_connectivity/internet_connectivity.dart';
 import 'package:chatapp/screens/chat_photo_view.dart';
 import 'package:chatapp/screens/chat_profile_pic_view.dart';
-import 'package:chatapp/screens/home_page.dart';
 import 'package:chatapp/shared_widgets/widgets.dart';
 import 'package:chatapp/style/style.dart';
-import 'package:chatapp/theme/theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -19,9 +17,8 @@ import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
-import 'package:badges/badges.dart';
 import 'package:provider/provider.dart';
-
+import 'package:image_cropper/image_cropper.dart';
 
 class ChattingPage extends StatefulWidget {
   final String receiverId;
@@ -57,9 +54,6 @@ class _ChattingPageState extends State<ChattingPage> {
   ScrollController scrollController;
   ScrollController textFieldController;
 
-  
-
-
   @override
   void initState() {
     chatId = '';
@@ -80,43 +74,161 @@ class _ChattingPageState extends State<ChattingPage> {
     currentUserId = preferences.getString('id');
     print('currentUserId: $currentUserId');
 
+    //Generate chat id to enable users to chat privately
     if (currentUserId.hashCode <= widget.receiverId.hashCode) {
       chatId = '${currentUserId}_${widget.receiverId}';
-      preferences.setString('chatId', chatId).then((value) => print('save chatId=> $value'));
+      preferences
+          .setString('chatId', chatId)
+          .then((value) => print('save chatId=> $value'));
     } else {
       chatId = '${widget.receiverId}_$currentUserId';
-      preferences.setString('chatId', chatId).then((value) => print('save chatId=> $value'));
+      preferences
+          .setString('chatId', chatId)
+          .then((value) => print('save chatId=> $value'));
       print("chatId: $chatId");
     }
 
+    //Update the user whom current user is chatting with
     FirebaseFirestore.instance
         .collection('users')
         .doc(currentUserId)
         .update({"chattingWith": widget.receiverId});
 
-    setState(() {});
+    if(this.mounted){
+      setState(() {});
+    }
   }
 
   focusNodeListener() {
     if (keyboardFocusNode.hasFocus) {
+      if(this.mounted){
       setState(() {
         hideSendButton = false; //show send Button
       });
+      }
     }
   }
 
-  getImageFromGallery() async {
+  displayImageSourceOptions(){
+    showModalBottomSheet(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+              topRight: Radius.circular(15.0), topLeft: Radius.circular(15.0)),
+        ),
+        context: context,
+        builder: (context){
+          return Container(
+            height: 100.0,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Styles.appBarColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Column(
+                          children: [
+                            IconButton(
+                                onPressed: (){
+                                  getImage(ImageSource.camera);
+                                  Navigator.pop(context);
+                                },
+                                icon: Icon(Icons.camera_alt, color: Colors.white,)
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 15.0),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Styles.appBarColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                            onPressed: (){
+                              getImage(ImageSource.gallery);
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(Icons.image, color: Colors.white,)
+
+                        ),
+                      ),
+
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
+  getImage(ImageSource source) async {
     PickedFile pickedImage =
-        await ImagePicker().getImage(source: ImageSource.gallery);
+        await ImagePicker().getImage(source: source);
 
     if (pickedImage != null) {
-      setState(() {
-        imageFile = File(pickedImage.path);
-        isLoading = false;
-      });
+      //crop image after selection
+      _imageCropper(pickedImage.path);
     } else {
       Fluttertoast.showToast(
           msg: 'No Image Selected', gravity: ToastGravity.CENTER);
+    }
+
+  }
+
+  Future<Null> _imageCropper(String imagePath) async{
+    File croppedImageFile = await ImageCropper.cropImage(
+        sourcePath: imagePath,
+        aspectRatioPresets: Platform.isAndroid
+            ? [
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio16x9
+        ]
+            : [
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio5x3,
+          CropAspectRatioPreset.ratio5x4,
+          CropAspectRatioPreset.ratio7x5,
+          CropAspectRatioPreset.ratio16x9
+        ],
+        androidUiSettings: AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: Styles.appBarColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false),
+        iosUiSettings: IOSUiSettings(
+          title: 'Crop Image ',
+        )
+    );
+
+    if(croppedImageFile != null){
+      if(this.mounted){
+        setState((){
+          imageFile = croppedImageFile;
+          isLoading = true;
+        });
+      }
+      else{
+        if(this.mounted){
+          setState((){
+            isLoading = false;
+          });
+        }
+      }
     }
 
     uploadImage();
@@ -139,9 +251,11 @@ class _ChattingPageState extends State<ChattingPage> {
       print('Completed Uploading Task');
     }).catchError((error) {
       Fluttertoast.showToast(msg: 'when complete error: $error');
-      setState(() {
-        isLoading = false;
-      });
+      if(this.mounted){
+        setState(() {
+          isLoading = false;
+        });
+      }
     }).then((value) {
       storageTaskSnapshot = value;
       storageTaskSnapshot.ref.getDownloadURL().then((newImageSelected) {
@@ -153,15 +267,19 @@ class _ChattingPageState extends State<ChattingPage> {
         });
       }, onError: (error) {
         Fluttertoast.showToast(msg: 'Download Url Error: $error');
-        setState(() {
-          isLoading = false;
-        });
+        if(this.mounted){
+          setState(() {
+            isLoading = false;
+          });
+        }
       });
     }, onError: (error) {
       Fluttertoast.showToast(msg: 'Storage Task Snapshot Error: $error');
-      setState(() {
-        isLoading = false;
-      });
+      if(this.mounted){
+        setState(() {
+          isLoading = false;
+        });
+      }
     });
   }
 
@@ -187,7 +305,7 @@ class _ChattingPageState extends State<ChattingPage> {
             radius: Radius.circular(10.0),
             child: ListView.builder(
                 keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 controller: scrollController,
                 reverse: true,
                 itemCount: snapshot.data.documents.length,
@@ -195,22 +313,21 @@ class _ChattingPageState extends State<ChattingPage> {
                   final DocumentSnapshot documentSnapshot =
                       snapshot.data.documents[index];
                   return InkWell(
-                    onLongPress: (){},
-                    child: createMessageListItem(
-                        documentSnapshot, context),
+                    onLongPress: () {},
+                    child: createMessageListItem(documentSnapshot, context),
                   );
                 }),
           );
         });
   }
 
-  createMessageListItem(DocumentSnapshot documentSnapshot,BuildContext context,) {
-
-
-
+  createMessageListItem(
+    DocumentSnapshot documentSnapshot,
+    BuildContext context,
+  ) {
     var getData = documentSnapshot.data();
     final bool isSendByMe = getData['sendBy'] == currentUserId;
-    bool lengthOfText = getData['msgContent'].toString().length <= 500;
+    //   bool lengthOfText = getData['msgContent'].toString().length <= 500;
 //  final isOnline = Provider.of<InternetConnectivity>(context);
 
     return Container(
@@ -285,7 +402,7 @@ class _ChattingPageState extends State<ChattingPage> {
                             children: [
                               //Text
                               SelectableLinkify(
-                                onOpen:  onOpenLink,
+                                onOpen: onOpenLink,
                                 text: getData['msgContent'].toString(),
                                 style: TextStyle(color: Styles.appBarColor),
                                 linkStyle: TextStyle(color: Colors.blue),
@@ -294,7 +411,7 @@ class _ChattingPageState extends State<ChattingPage> {
                               //Ticking Icon
                               isSendByMe
                                   ? Icon(Icons.done_all,
-                                      size: 13, color:Colors.blue)
+                                      size: 13, color: Colors.blue)
                                   : SizedBox(),
                             ],
                           ),
@@ -397,7 +514,9 @@ class _ChattingPageState extends State<ChattingPage> {
                       width: 100.0,
                       fit: BoxFit.cover,
                     ),
-                  ));
+                  )
+
+    );
   }
 
   createMessagesList(BuildContext context) {
@@ -417,7 +536,7 @@ class _ChattingPageState extends State<ChattingPage> {
             width: 5.0,
           ),
 
-          //Text Field
+          //Input Field
           Flexible(
             child: Container(
               margin: EdgeInsets.symmetric(horizontal: 5.0),
@@ -438,7 +557,7 @@ class _ChattingPageState extends State<ChattingPage> {
                           color: Color.fromRGBO(192, 214, 255, 5.0),
                           shape: BoxShape.circle),
                       child: GestureDetector(
-                          onTap: getImageFromGallery,
+                          onTap: displayImageSourceOptions,
                           child: Icon(Icons.image,
                               color: Styles.appBarColor, size: 20)),
                     ),
@@ -480,22 +599,22 @@ class _ChattingPageState extends State<ChattingPage> {
 
           //Send Button
           GestureDetector(
-                  onTap: () {
-                    if (messageController.text.isNotEmpty &&
-                        messageController.text.trim().isNotEmpty) {
-                      onMessageSend(messageController.text, 0);
-                      messageController.clear(); //clear
-                    }
-                  },
-                  child: Container(
-                    height: 47,
-                    width: 47,
-                    margin: EdgeInsets.only(right: 5.0),
-                    decoration: BoxDecoration(
-                        color: Styles.appBarColor, shape: BoxShape.circle),
-                    child: Icon(Icons.send, size: 24, color: Colors.white),
-                  ),
-                ),
+            onTap: () {
+              if (messageController.text.isNotEmpty &&
+                  messageController.text.trim().isNotEmpty) {
+                onMessageSend(messageController.text, 0);
+                messageController.clear(); //clear
+              }
+            },
+            child: Container(
+              height: 47,
+              width: 47,
+              margin: EdgeInsets.only(right: 5.0),
+              decoration: BoxDecoration(
+                  color: Styles.appBarColor, shape: BoxShape.circle),
+              child: Icon(Icons.send, size: 24, color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
@@ -522,17 +641,14 @@ class _ChattingPageState extends State<ChattingPage> {
         'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
         'chatId': chatId
       }).whenComplete(() {
-        FirebaseFirestore.instance
-            .collection('chattedUsers')
-            .doc(chatId)
-            .set({
+        FirebaseFirestore.instance.collection('chattedUsers').doc(chatId).set({
           'receiverId': widget.receiverId,
           'receiverName': widget.receiverName,
           'receiverPhoto': widget.receiverAvatar,
           'chatId': chatId,
           'recentMessages': msgContent,
-          'timestamp' : DateTime.now().millisecondsSinceEpoch.toString()
-        }).catchError((onError){
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString()
+        }).catchError((onError) {
           print('$onError');
         });
       });
@@ -540,7 +656,7 @@ class _ChattingPageState extends State<ChattingPage> {
     print('$msgContent, type');
   }
 
-  Future<void> deleteMessage() async{
+  Future<void> deleteMessage() async {
     return FirebaseFirestore.instance
         .collection('messages')
         .doc(chatId)
@@ -553,14 +669,13 @@ class _ChattingPageState extends State<ChattingPage> {
 
   @override
   Widget build(BuildContext context) {
-
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     bool isMe = currentUserId == widget.receiverId;
 
     return ChangeNotifierProvider<InternetConnectivity>(
-      create: (context)=> InternetConnectivity(),
+      create: (context) => InternetConnectivity(),
       child: Consumer<InternetConnectivity>(
-        builder: (context, InternetConnectivity internetConnectivity, child){
+        builder: (context, InternetConnectivity internetConnectivity, child) {
           return Scaffold(
             appBar: AppBar(
               backgroundColor: Styles.appBarColor,
@@ -570,8 +685,10 @@ class _ChattingPageState extends State<ChattingPage> {
                       style: TextStyle(
                         fontSize: 15.0,
                       )),
-                  Text(isMe? ('${internetConnectivity.getIsOnline? '' : ''}') :
-                  ('${internetConnectivity.getIsOnline? 'online' : 'last seen'}'),
+                  Text(
+                      isMe
+                          ? ('${internetConnectivity.getIsOnline ? '' : ''}')
+                          : ('${internetConnectivity.getIsOnline ? 'online' : 'last seen'}'),
                       style: TextStyle(
                         fontSize: 15.0,
                       )),
@@ -584,8 +701,8 @@ class _ChattingPageState extends State<ChattingPage> {
                     showDialog(
                         context: (context),
                         builder: (context) => ChatProfilePicView(
-                          profileImage: widget.receiverAvatar ?? '',
-                        ));
+                              profileImage: widget.receiverAvatar ?? '',
+                            ));
                   },
                   child: Padding(
                     padding: EdgeInsets.all(8.0),
@@ -593,7 +710,7 @@ class _ChattingPageState extends State<ChattingPage> {
                       CircleAvatar(
                         backgroundColor: Colors.black,
                         backgroundImage:
-                        CachedNetworkImageProvider(widget.receiverAvatar),
+                            CachedNetworkImageProvider(widget.receiverAvatar),
                       ),
 /*                internetConnectivity.getIsOnline
                           ? Positioned(
@@ -629,26 +746,26 @@ class _ChattingPageState extends State<ChattingPage> {
                 hideScrollDownwardButton
                     ? Container()
                     : Positioned(
-                    top: 570.0,
-                    left: 320.0,
-                    child: GestureDetector(
-                      onTap: () {
-                        scrollController.animateTo(0.0,
-                            curve: Curves.easeOut,
-                            duration: const Duration(milliseconds: 300));
-                      },
-                      child: Container(
-                          height: 28,
-                          width: 28,
-                          decoration: BoxDecoration(
-                              color: Styles.appBarColor,
-                              shape: BoxShape.circle),
-                          child: Icon(
-                            Icons.arrow_downward,
-                            size: 20,
-                            color: Colors.white,
-                          )),
-                    ))
+                        top: 570.0,
+                        left: 320.0,
+                        child: GestureDetector(
+                          onTap: () {
+                            scrollController.animateTo(0.0,
+                                curve: Curves.easeOut,
+                                duration: const Duration(milliseconds: 300));
+                          },
+                          child: Container(
+                              height: 28,
+                              width: 28,
+                              decoration: BoxDecoration(
+                                  color: Styles.appBarColor,
+                                  shape: BoxShape.circle),
+                              child: Icon(
+                                Icons.arrow_downward,
+                                size: 20,
+                                color: Colors.white,
+                              )),
+                        ))
               ],
             ),
           );
