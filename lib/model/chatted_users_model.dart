@@ -20,10 +20,8 @@ class ChattedUsersModel{
          receiverName: doc['receiverName'],
          receiverPhoto: doc['receiverPhoto'],
          chatId: doc['chatId'],
-         message: doc['recentMessages'],
+         message: doc['recentMessage'],
          timestamp: doc['timestamp']
-
-
      );
    }
 

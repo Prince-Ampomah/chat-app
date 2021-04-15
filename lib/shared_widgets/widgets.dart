@@ -107,12 +107,12 @@ Widget loadingData() {
 Widget noUsersData({String info}) {
   return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-            noData(),
-            SizedBox(height: 10.0),
-            SizedBox(height: 5.0),
-            Text(info)
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      noData(),
+      SizedBox(height: 10.0),
+      SizedBox(height: 5.0),
+      Text(info)
     ],
   ));
 }
@@ -189,7 +189,6 @@ Widget chatImagePlaceholder() {
     ),
   );
 }
-
 
 GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 

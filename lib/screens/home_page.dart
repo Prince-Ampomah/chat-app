@@ -32,11 +32,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
   }
 
-//  @override
-//  void dispose() {
-//    InternetConnectivity().listener.cancel();
-//    super.dispose();
-//  }
 
   void readFromLocal() async {
     preferences = await SharedPreferences.getInstance();
@@ -49,7 +44,8 @@ class _HomePageState extends State<HomePage> {
     chatId = preferences.getString('chatId');
 
     Stream<QuerySnapshot> allChattedUsers = FirebaseFirestore.instance
-        .collection('chattedUsers')
+        .collection('chats')
+        .where('user', arrayContains: id)
         .orderBy('timestamp', descending: true)
         .snapshots();
     setState(() {
@@ -63,9 +59,9 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
 
     Stream<QuerySnapshot> listAllMessages = FirebaseFirestore.instance
-        .collection('messages')
+        .collection('chats')
         .doc(chatId)
-        .collection(chatId)
+        .collection('messages')
         .orderBy('timestamp', descending: true)
         .snapshots();
     setState(() {
@@ -130,9 +126,8 @@ class _HomePageState extends State<HomePage> {
           actions: [popMenu(context)],
           elevation: 0.0,
         ),
-        body: streamAllChattedUsers != null
-            ? showChattedUsers()
-            : showNoChatList());
+        body: streamAllChattedUsers != null? showChattedUsers():showNoChatList()
+    );
   }
 }
 

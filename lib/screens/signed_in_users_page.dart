@@ -78,7 +78,6 @@ class _AllUsersState extends State<AllUsers> {
         username: documentSnapshot['username'],
         photoUrl: documentSnapshot['photoUrl'],
         createdAt: documentSnapshot['createdAt']);
-
     return FlatButton(
       onPressed: () async{
         if (currentUserId != documentSnapshot.data()['id']) {

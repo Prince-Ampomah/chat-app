@@ -20,7 +20,7 @@ class _SignInState extends State<SignIn> {
       await authServices.signIn();
     } catch (e) {
       print('ERROR: ${e.toString()}');
-      if(this.mounted){
+      if (this.mounted) {
         setState(() {
           isLoading = false;
         });
@@ -30,7 +30,7 @@ class _SignInState extends State<SignIn> {
     //check  internet connectivity
     bool result = await DataConnectionChecker().hasConnection;
     if (result == false) {
-      if(this.mounted){
+      if (this.mounted) {
         setState(() {
           isLoading = false;
         });

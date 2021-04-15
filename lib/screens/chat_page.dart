@@ -286,9 +286,9 @@ class _ChattingPageState extends State<ChattingPage> {
   Widget streamMessages(BuildContext context) {
     return StreamBuilder(
         stream: FirebaseFirestore.instance
-            .collection('messages')
+            .collection('chats')
             .doc(chatId)
-            .collection(chatId)
+            .collection('messages')
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -627,10 +627,10 @@ class _ChattingPageState extends State<ChattingPage> {
 
     if (msgContent.isNotEmpty) {
       FirebaseFirestore.instance
-          .collection('messages')
+          .collection('chats')
           .doc(chatId)
-          .collection(chatId)
-          .doc(DateTime.now().millisecondsSinceEpoch.toString())
+          .collection('messages')
+          .doc(DateTime.now().toString())
           .set({
         'username': widget.receiverName,
         'photoUrl': widget.receiverAvatar,
@@ -640,14 +640,24 @@ class _ChattingPageState extends State<ChattingPage> {
         'type': type,
         'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
         'chatId': chatId
-      }).whenComplete(() {
-        FirebaseFirestore.instance.collection('chattedUsers').doc(chatId).set({
-          'receiverId': widget.receiverId,
-          'receiverName': widget.receiverName,
-          'receiverPhoto': widget.receiverAvatar,
-          'chatId': chatId,
-          'recentMessages': msgContent,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString()
+      })
+          .whenComplete(() {
+            Map<String, dynamic> lastMessages = {
+              'recentMessage': msgContent,
+              'receiverPhoto': widget.receiverAvatar,
+              'timestamp': DateTime.now().millisecondsSinceEpoch.toString()
+    };
+            List<String> user = [currentUserId, widget.receiverId];
+        FirebaseFirestore.instance.collection('chats').doc(chatId)
+        .set({
+          'last_messages' : lastMessages,
+          'user' : user,
+          // 'receiverId': widget.receiverId,
+          // 'receiverName': widget.receiverName,
+          // 'receiverPhoto': widget.receiverAvatar,
+          // 'chatId': chatId,
+          // 'recentMessages': msgContent,
+          // 'timestamp': DateTime.now().millisecondsSinceEpoch.toString()
         }).catchError((onError) {
           print('$onError');
         });
@@ -658,9 +668,9 @@ class _ChattingPageState extends State<ChattingPage> {
 
   Future<void> deleteMessage() async {
     return FirebaseFirestore.instance
-        .collection('messages')
+        .collection('chats')
         .doc(chatId)
-        .collection(chatId)
+        .collection('messages')
         .doc(DateTime.now().millisecondsSinceEpoch.toString())
         .delete()
         .then((value) => print("User Deleted"))
@@ -670,106 +680,90 @@ class _ChattingPageState extends State<ChattingPage> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    bool isMe = currentUserId == widget.receiverId;
-
-    return ChangeNotifierProvider<InternetConnectivity>(
-      create: (context) => InternetConnectivity(),
-      child: Consumer<InternetConnectivity>(
-        builder: (context, InternetConnectivity internetConnectivity, child) {
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: Styles.appBarColor,
-              title: Column(
-                children: [
-                  Text(widget.receiverName ?? '',
-                      style: TextStyle(
-                        fontSize: 15.0,
-                      )),
-                  Text(
-                      isMe
-                          ? ('${internetConnectivity.getIsOnline ? '' : ''}')
-                          : ('${internetConnectivity.getIsOnline ? 'online' : 'last seen'}'),
-                      style: TextStyle(
-                        fontSize: 15.0,
-                      )),
-                ],
-              ),
-              centerTitle: true,
-              actions: [
-                GestureDetector(
-                  onTap: () {
-                    showDialog(
-                        context: (context),
-                        builder: (context) => ChatProfilePicView(
-                              profileImage: widget.receiverAvatar ?? '',
-                            ));
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Stack(children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.black,
-                        backgroundImage:
-                            CachedNetworkImageProvider(widget.receiverAvatar),
-                      ),
-/*                internetConnectivity.getIsOnline
-                          ? Positioned(
-                          top: 20.0,
-                          right: 0.0,
-                          left: 33.0,
-                          child: Container(
-                              height: 25,
-                              width: 25,
-                              decoration: BoxDecoration(
-                                  color: Color.fromRGBO(0, 250, 0, 1.0),
-                                  border: Border.all(
-                                      width: 0.5, color: Colors.white),
-                                  shape: BoxShape.circle)))
-                          : Container(),*/
-                    ]),
-                  ),
-                )
-              ],
-            ),
-            body: Stack(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    //Messages List
-                    createMessagesList(context),
-
-                    //Input Field
-                    createInputField()
-                  ],
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Styles.appBarColor,
+        title: Column(
+          children: [
+            Text(widget.receiverName ?? '',
+                style: TextStyle(
+                  fontSize: 15.0,
+                )),
+          ],
+        ),
+        centerTitle: true,
+        actions: [
+          GestureDetector(
+            onTap: () {
+              showDialog(
+                  context: (context),
+                  builder: (context) => ChatProfilePicView(
+                    profileImage: widget.receiverAvatar ?? '',
+                  ));
+            },
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Stack(children: [
+                CircleAvatar(
+                  backgroundColor: Colors.black,
+                  backgroundImage:
+                  CachedNetworkImageProvider(widget.receiverAvatar),
                 ),
-                hideScrollDownwardButton
-                    ? Container()
-                    : Positioned(
-                        top: 570.0,
-                        left: 320.0,
-                        child: GestureDetector(
-                          onTap: () {
-                            scrollController.animateTo(0.0,
-                                curve: Curves.easeOut,
-                                duration: const Duration(milliseconds: 300));
-                          },
-                          child: Container(
-                              height: 28,
-                              width: 28,
-                              decoration: BoxDecoration(
-                                  color: Styles.appBarColor,
-                                  shape: BoxShape.circle),
-                              child: Icon(
-                                Icons.arrow_downward,
-                                size: 20,
-                                color: Colors.white,
-                              )),
-                        ))
-              ],
+/*                internetConnectivity.getIsOnline
+                        ? Positioned(
+                        top: 20.0,
+                        right: 0.0,
+                        left: 33.0,
+                        child: Container(
+                            height: 25,
+                            width: 25,
+                            decoration: BoxDecoration(
+                                color: Color.fromRGBO(0, 250, 0, 1.0),
+                                border: Border.all(
+                                    width: 0.5, color: Colors.white),
+                                shape: BoxShape.circle)))
+                        : Container(),*/
+              ]),
             ),
-          );
-        },
+          )
+        ],
+      ),
+      body: Stack(
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              //Messages List
+              createMessagesList(context),
+
+              //Input Field
+              createInputField()
+            ],
+          ),
+          hideScrollDownwardButton
+              ? Container()
+              : Positioned(
+              top: 570.0,
+              left: 320.0,
+              child: GestureDetector(
+                onTap: () {
+                  scrollController.animateTo(0.0,
+                      curve: Curves.easeOut,
+                      duration: const Duration(milliseconds: 300));
+                },
+                child: Container(
+                    height: 28,
+                    width: 28,
+                    decoration: BoxDecoration(
+                        color: Styles.appBarColor,
+                        shape: BoxShape.circle),
+                    child: Icon(
+                      Icons.arrow_downward,
+                      size: 20,
+                      color: Colors.white,
+                    )),
+              ))
+        ],
       ),
     );
   }
